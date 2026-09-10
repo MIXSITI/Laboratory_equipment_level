@@ -14,13 +14,12 @@ hourly_rate = 1200.0
 booking_date = date(2026, 9, 15)
 duration_hours_str = "3.0"
 
-# Преобразование типов данных
 user_access_level = int(user_level_str)
 duration_hours = float(duration_hours_str)
 is_student = (user_role.lower() == "студент")
 
 
-# 1. Функция проверки готовности оборудования (условные конструкции)
+# 1. Функция проверки готовности оборудования 
 def check_equipment_availability(operational, under_maintenance):
     if not operational:
         return "Оборудование неисправно"
@@ -29,7 +28,7 @@ def check_equipment_availability(operational, under_maintenance):
     return "Оборудование готово к работе"
 
 
-# 2. Функция проверки допуска пользователя (операции сравнения, логические операции)
+# 2. Функция проверки допуска пользователя 
 def check_user_access(user_level, min_level, briefing_passed):
     if not briefing_passed:
         return False
@@ -38,7 +37,7 @@ def check_user_access(user_level, min_level, briefing_passed):
     return False
 
 
-# 3. Функция расчета стоимости бронирования (арифметические операции, условия)
+# 3. Функция расчета стоимости бронирования 
 def calculate_booking_cost(rate, hours, student):
     base_cost = rate * hours
     if student:
@@ -49,7 +48,7 @@ def calculate_booking_cost(rate, hours, student):
     return round(total_cost, 2)
 
 
-# Вывод информации о бронировании (начальный сценарий ПР1)
+# Вывод информации о бронировании 
 print(f"Пользователь: {user_name} ({user_role}, уровень допуска: {user_access_level})")
 print(f"Оборудование: {equipment_name}")
 print(f"Дата бронирования: {booking_date}")
