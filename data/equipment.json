@@ -24,7 +24,7 @@
         "operational": true,
         "under_maintenance": false,
         "required_level": 1,
-        "hourly_rate": 800.0
+        "hourly_rate": 850.0
     },
     {
         "id": 4,
@@ -33,6 +33,6 @@
         "operational": true,
         "under_maintenance": true,
         "required_level": 2,
-        "hourly_rate": 600.0
+        "hourly_rate": 610.0
     }
 ]
