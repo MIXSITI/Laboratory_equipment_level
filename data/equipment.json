@@ -1,0 +1,38 @@
+[
+    {
+        "id": 1,
+        "name": "Спектрофотометр UV-1800",
+        "inventory_number": "EQ-301",
+        "operational": true,
+        "under_maintenance": false,
+        "required_level": 2,
+        "hourly_rate": 1200.0
+    },
+    {
+        "id": 2,
+        "name": "Сканирующий электронный микроскоп",
+        "inventory_number": "EQ-505",
+        "operational": true,
+        "under_maintenance": false,
+        "required_level": 3,
+        "hourly_rate": 2500.0
+    },
+    {
+        "id": 3,
+        "name": "Осциллограф DSO-X 2024A",
+        "inventory_number": "EQ-110",
+        "operational": true,
+        "under_maintenance": false,
+        "required_level": 1,
+        "hourly_rate": 800.0
+    },
+    {
+        "id": 4,
+        "name": "3D-принтер Ultimaker S3",
+        "inventory_number": "EQ-220",
+        "operational": true,
+        "under_maintenance": true,
+        "required_level": 2,
+        "hourly_rate": 600.0
+    }
+]
