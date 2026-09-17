@@ -1,3 +1,5 @@
+"""Точка запуска системы бронирования лабораторного оборудования."""
+
 from pathlib import Path
 
 from bookings import (
@@ -35,6 +37,7 @@ BOOKINGS_FILE = DATA_DIR / "bookings.json"
 
 
 def show_menu() -> None:
+    """Вывести главное меню приложения."""
     print()
     print("=== Система бронирования лабораторного оборудования ===")
     print()
@@ -54,6 +57,7 @@ def show_menu() -> None:
 
 
 def show_equipment(equipment: dict[int, dict]) -> None:
+    """Вывести список оборудования в виде таблицы."""
     items = sort_equipment(equipment)
     if not items:
         print("Список оборудования пуст.")
@@ -67,19 +71,22 @@ def show_equipment(equipment: dict[int, dict]) -> None:
     print("-" * 78)
     for item in items:
         status = check_equipment_availability(
-            item["operational"],
-            item["under_maintenance"],
+            item.get("operational", True),
+            item.get("under_maintenance", False),
         )
-        name = item["name"][:36]
-        inv = item["inventory_number"]
+        name = item.get("name", "")[:36]
+        inv = item.get("inventory_number", "-")
+        rate = item.get("hourly_rate", 0.0)
+        level = item.get("required_level", 1)
         print(
             f"{item['id']:<4}{name:<38}{inv:<10}"
-            f"{item['hourly_rate']:<8}{item['required_level']:<4}"
+            f"{rate:<8}{level:<4}"
             f"{status}"
         )
 
 
 def show_users(users: dict[int, dict]) -> None:
+    """Вывести список пользователей."""
     if not users:
         print("Список пользователей пуст.")
         return
@@ -87,10 +94,13 @@ def show_users(users: dict[int, dict]) -> None:
     print(f"{'ID':<4}{'ФИО':<32}{'Статус':<12}{'Ур.':<4}ТБ")
     print("-" * 60)
     for item in users.values():
-        briefing = "да" if item["briefing_passed"] else "нет"
+        briefing = "да" if item.get("briefing_passed", False) else "нет"
+        name = item.get("name", "")[:30]
+        role = item.get("role", "")[:10]
+        level = item.get("access_level", 1)
         print(
-            f"{item['id']:<4}{item['name']:<32}"
-            f"{item['role']:<12}{item['access_level']:<4}{briefing}"
+            f"{item['id']:<4}{name:<32}"
+            f"{role:<12}{level:<4}{briefing}"
         )
 
 
@@ -99,6 +109,7 @@ def show_bookings(
     equipment: dict[int, dict],
     users: dict[int, dict],
 ) -> None:
+    """Вывести список бронирований."""
     if not bookings:
         print("Список бронирований пуст.")
         return
@@ -109,18 +120,22 @@ def show_bookings(
     )
     print("-" * 90)
     for item in bookings:
-        eq = get_equipment_by_id(equipment, item["equipment_id"])
+        eq = get_equipment_by_id(equipment, item.get("equipment_id"))
         user = get_user_by_id(users, item.get("user_id"))
-        eq_name = eq["name"][:32] if eq else "-"
-        user_name = user["name"][:20] if user else "-"
+        eq_name = eq.get("name", "")[:32] if eq else "-"
+        user_name = user.get("name", "")[:20] if user else "-"
+        booking_date = item.get("booking_date", "")
+        duration = item.get("duration_hours", 0.0)
+        cost = item.get("cost", 0.0)
         print(
             f"{item['id']:<4}{eq_name:<34}{user_name:<22}"
-            f"{item['booking_date']!s:<12}"
-            f"{item['duration_hours']:<6}{item['cost']}"
+            f"{booking_date!s:<12}"
+            f"{duration:<6}{cost}"
         )
 
 
 def handle_find_equipment(equipment: dict[int, dict]) -> None:
+    """Найти и вывести оборудование по названию или инв. номеру."""
     query = input("Введите часть названия или инв. номер: ").strip()
     if not query:
         print("Поисковый запрос не может быть пустым.")
@@ -138,14 +153,15 @@ def handle_find_equipment(equipment: dict[int, dict]) -> None:
 
 
 def handle_check_readiness(equipment: dict[int, dict]) -> None:
+    """Проверить техническую готовность выбранного прибора."""
     equipment_id = input_int("Введите ID оборудования: ")
     item = get_equipment_by_id(equipment, equipment_id)
     if item is None:
         print("Оборудование с таким ID не найдено.")
         return
     status = check_equipment_availability(
-        item["operational"],
-        item["under_maintenance"],
+        item.get("operational", True),
+        item.get("under_maintenance", False),
     )
     print(f"{item['name']}: {status}")
 
@@ -154,6 +170,7 @@ def handle_check_availability(
     equipment: dict[int, dict],
     bookings: list[dict],
 ) -> None:
+    """Проверить доступность оборудования на дату."""
     equipment_id = input_int("Введите ID оборудования: ")
     item = get_equipment_by_id(equipment, equipment_id)
     if item is None:
@@ -161,8 +178,8 @@ def handle_check_availability(
         return
     print(f"Прибор: {item['name']}")
     status = check_equipment_availability(
-        item["operational"],
-        item["under_maintenance"],
+        item.get("operational", True),
+        item.get("under_maintenance", False),
     )
     if status != "Оборудование готово к работе":
         print(f"Техническое состояние: {status}")
@@ -180,6 +197,7 @@ def handle_create_booking(
     users: dict[int, dict],
     bookings: list[dict],
 ) -> None:
+    """Создать бронирование после всех проверок ПР1 и ПР2."""
     equipment_id = input_int("Введите ID оборудования: ")
     item = get_equipment_by_id(equipment, equipment_id)
     if item is None:
@@ -187,8 +205,8 @@ def handle_create_booking(
         return
 
     tech_status = check_equipment_availability(
-        item["operational"],
-        item["under_maintenance"],
+        item.get("operational", True),
+        item.get("under_maintenance", False),
     )
     if tech_status != "Оборудование готово к работе":
         print(f"Бронирование невозможно: {tech_status}")
@@ -201,9 +219,9 @@ def handle_create_booking(
         return
 
     access_ok = check_user_access(
-        user["access_level"],
-        item["required_level"],
-        user["briefing_passed"],
+        user.get("access_level", 1),
+        item.get("required_level", 1),
+        user.get("briefing_passed", False),
     )
     if not access_ok:
         print("Допуск пользователя: Отклонен")
@@ -211,14 +229,18 @@ def handle_create_booking(
         return
 
     booking_date = input_date("Введите дату (ГГГГ-ММ-ДД): ")
+    if not is_equipment_available(bookings, equipment_id, booking_date):
+        print(get_booking_status(False))
+        return
+
     duration_hours = input_float(
         "Введите длительность в часах: ",
         min_value=0.5,
     )
 
-    is_student = user["role"].strip().lower() == "студент"
+    is_student = user.get("role", "").strip().lower() == "студент"
     cost = calculate_booking_cost(
-        item["hourly_rate"],
+        item.get("hourly_rate", 0.0),
         duration_hours,
         is_student,
     )
@@ -241,6 +263,7 @@ def handle_create_booking(
 
 
 def handle_cancel_booking(bookings: list[dict]) -> None:
+    """Отменить бронирование по идентификатору заявки."""
     booking_id = input_int("Введите ID бронирования: ")
     if cancel_booking(bookings, booking_id):
         save_bookings(BOOKINGS_FILE, bookings)
@@ -253,6 +276,7 @@ def show_statistics(
     equipment: dict[int, dict],
     bookings: list[dict],
 ) -> None:
+    """Вывести статистику по оборудованию и бронированиям."""
     stats = get_booking_statistics(bookings)
     print()
     print("=== Статистика ===")
@@ -270,6 +294,7 @@ def show_statistics(
 
 
 def handle_add_equipment(equipment: dict[int, dict]) -> None:
+    """Добавить новое оборудование в систему."""
     name = input("Введите наименование оборудования: ").strip()
     if not name:
         print("Наименование не может быть пустым.")
@@ -298,6 +323,7 @@ def handle_add_equipment(equipment: dict[int, dict]) -> None:
 
 
 def handle_add_user(users: dict[int, dict]) -> None:
+    """Добавить нового пользователя в систему."""
     name = input("Введите ФИО пользователя: ").strip()
     if not name:
         print("ФИО не может быть пустым.")
@@ -306,10 +332,12 @@ def handle_add_user(users: dict[int, dict]) -> None:
     if role not in ("студент", "сотрудник"):
         role = "студент"
     level = input_int(
+        "Введите уровень допуска пользователя (1-3): ",
         min_value=1,
         max_value=3,
     )
     briefing_str = input(
+        "Пройден ли инструктаж по ТБ (да/нет): "
     ).strip().lower()
     briefing = (briefing_str == "да")
     add_user(
@@ -328,12 +356,14 @@ def save_all(
     users: dict[int, dict],
     bookings: list[dict],
 ) -> None:
+    """Сохранить все данные проекта в JSON-файлы."""
     save_equipment(EQUIPMENT_FILE, equipment)
     save_users(USERS_FILE, users)
     save_bookings(BOOKINGS_FILE, bookings)
 
 
 def main() -> None:
+    """Точка запуска: меню приложения и вызов функций проекта."""
     equipment = load_equipment(EQUIPMENT_FILE)
     users = load_users(USERS_FILE)
     bookings = load_bookings(BOOKINGS_FILE)

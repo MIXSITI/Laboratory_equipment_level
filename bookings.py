@@ -1,3 +1,5 @@
+"""Функции для создания и проверки бронирований оборудования."""
+
 from datetime import date
 
 
@@ -6,6 +8,7 @@ def is_equipment_available(
     equipment_id: int,
     booking_date: date | str,
 ) -> bool:
+    """Проверить, свободно ли оборудование на указанную дату."""
     if isinstance(booking_date, str):
         booking_date = date.fromisoformat(booking_date)
     for booking in bookings:
@@ -27,6 +30,7 @@ def create_booking(
     user_id: int | None = None,
     cost: float = 0.0,
 ) -> dict | None:
+    """Создать новое бронирование, если оборудование свободно."""
     if not is_equipment_available(bookings, equipment_id, booking_date):
         return None
     booking_id = max((item["id"] for item in bookings), default=0) + 1
@@ -43,6 +47,7 @@ def create_booking(
 
 
 def cancel_booking(bookings: list[dict], booking_id: int) -> bool:
+    """Отменить бронирование по идентификатору."""
     for index, booking in enumerate(bookings):
         if booking["id"] == booking_id:
             del bookings[index]
@@ -51,6 +56,7 @@ def cancel_booking(bookings: list[dict], booking_id: int) -> bool:
 
 
 def get_booking_status(is_available: bool) -> str:
+    """Вернуть текстовый статус доступности оборудования."""
     if is_available:
         return "Оборудование доступно для бронирования"
     return "Оборудование уже занято"
@@ -61,6 +67,10 @@ def calculate_booking_cost(
     hours: float,
     student: bool,
 ) -> float:
+    """Рассчитать итоговую стоимость сеанса бронирования.
+
+    Функция сохранена из начального сценария ПР1.
+    """
     base_cost = rate * hours
     if student:
         discount = 0.5
@@ -71,7 +81,12 @@ def calculate_booking_cost(
 
 
 def get_booking_statistics(bookings: list[dict]) -> dict:
-    booked_ids = {item["equipment_id"] for item in bookings}
+    """Собрать статистику по списку бронирований."""
+    booked_ids = {
+        item["equipment_id"]
+        for item in bookings
+        if "equipment_id" in item
+    }
     total_cost = sum(item.get("cost", 0.0) for item in bookings)
     return {
         "bookings_count": len(bookings),
