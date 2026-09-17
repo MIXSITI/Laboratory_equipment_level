@@ -1,5 +1,3 @@
-"""Точка запуска системы бронирования лабораторного оборудования."""
-
 from pathlib import Path
 
 from bookings import (
@@ -197,7 +195,6 @@ def handle_create_booking(
     users: dict[int, dict],
     bookings: list[dict],
 ) -> None:
-    """Создать бронирование после всех проверок ПР1 и ПР2."""
     equipment_id = input_int("Введите ID оборудования: ")
     item = get_equipment_by_id(equipment, equipment_id)
     if item is None:
@@ -263,7 +260,6 @@ def handle_create_booking(
 
 
 def handle_cancel_booking(bookings: list[dict]) -> None:
-    """Отменить бронирование по идентификатору заявки."""
     booking_id = input_int("Введите ID бронирования: ")
     if cancel_booking(bookings, booking_id):
         save_bookings(BOOKINGS_FILE, bookings)
@@ -276,7 +272,6 @@ def show_statistics(
     equipment: dict[int, dict],
     bookings: list[dict],
 ) -> None:
-    """Вывести статистику по оборудованию и бронированиям."""
     stats = get_booking_statistics(bookings)
     print()
     print("=== Статистика ===")
@@ -294,7 +289,6 @@ def show_statistics(
 
 
 def handle_add_equipment(equipment: dict[int, dict]) -> None:
-    """Добавить новое оборудование в систему."""
     name = input("Введите наименование оборудования: ").strip()
     if not name:
         print("Наименование не может быть пустым.")
@@ -323,7 +317,6 @@ def handle_add_equipment(equipment: dict[int, dict]) -> None:
 
 
 def handle_add_user(users: dict[int, dict]) -> None:
-    """Добавить нового пользователя в систему."""
     name = input("Введите ФИО пользователя: ").strip()
     if not name:
         print("ФИО не может быть пустым.")
@@ -356,14 +349,12 @@ def save_all(
     users: dict[int, dict],
     bookings: list[dict],
 ) -> None:
-    """Сохранить все данные проекта в JSON-файлы."""
     save_equipment(EQUIPMENT_FILE, equipment)
     save_users(USERS_FILE, users)
     save_bookings(BOOKINGS_FILE, bookings)
 
 
 def main() -> None:
-    """Точка запуска: меню приложения и вызов функций проекта."""
     equipment = load_equipment(EQUIPMENT_FILE)
     users = load_users(USERS_FILE)
     bookings = load_bookings(BOOKINGS_FILE)
