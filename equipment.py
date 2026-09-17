@@ -26,11 +26,13 @@ def add_equipment(
 
 
 def find_equipment(equipment: dict[int, dict], query: str) -> list[dict]:
-    """Найти оборудование по подстроке названия."""
+    """Найти оборудование по подстроке названия или инвентарному номеру."""
     query_lower = query.lower()
     found = []
     for item in equipment.values():
-        if query_lower in item["name"].lower():
+        name_match = query_lower in item.get("name", "").lower()
+        inv_match = query_lower in item.get("inventory_number", "").lower()
+        if name_match or inv_match:
             found.append(item)
     return found
 

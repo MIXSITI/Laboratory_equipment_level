@@ -45,6 +45,8 @@ def check_user_access(
     return False
 
 
-def get_user_by_id(users: dict[int, dict], user_id: int) -> dict | None:
+def get_user_by_id(users: dict[int, dict], user_id: int | None) -> dict | None:
     """Вернуть запись пользователя по идентификатору."""
+    if user_id is None:
+        return None
     return users.get(user_id)

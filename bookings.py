@@ -6,12 +6,17 @@ from datetime import date
 def is_equipment_available(
     bookings: list[dict],
     equipment_id: int,
-    booking_date: date,
+    booking_date: date | str,
 ) -> bool:
     """Проверить, свободно ли оборудование на указанную дату."""
+    if isinstance(booking_date, str):
+        booking_date = date.fromisoformat(booking_date)
     for booking in bookings:
+        target_date = booking["booking_date"]
+        if isinstance(target_date, str):
+            target_date = date.fromisoformat(target_date)
         same_item = booking["equipment_id"] == equipment_id
-        same_date = booking["booking_date"] == booking_date
+        same_date = target_date == booking_date
         if same_item and same_date:
             return False
     return True

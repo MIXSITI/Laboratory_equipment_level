@@ -11,6 +11,7 @@ from bookings import (
     is_equipment_available,
 )
 from equipment import (
+    add_equipment,
     check_equipment_availability,
     filter_equipment_by_level,
     find_equipment,
@@ -25,7 +26,7 @@ from storage import (
     save_equipment,
     save_users,
 )
-from users import check_user_access, get_user_by_id
+from users import add_user, check_user_access, get_user_by_id
 from utils import input_date, input_float, input_int
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -49,6 +50,8 @@ def show_menu() -> None:
     print("7. Показать бронирования")
     print("8. Показать пользователей")
     print("9. Статистика")
+    print("10. Добавить оборудование")
+    print("11. Добавить пользователя")
     print("0. Выход")
     print()
 
@@ -124,15 +127,21 @@ def show_bookings(
 
 
 def handle_find_equipment(equipment: dict[int, dict]) -> None:
-    """Найти и вывести оборудование по названию."""
-    query = input("Введите часть названия: ").strip()
+    """Найти и вывести оборудование по названию или инв. номеру."""
+    query = input("Введите часть названия или инв. номер: ").strip()
+    if not query:
+        print("Поисковый запрос не может быть пустым.")
+        return
     found = find_equipment(equipment, query)
     if not found:
         print("Оборудование не найдено.")
         return
-    print("Найдено:")
+    print(f"Найдено ({len(found)}):")
     for item in found:
-        print(f"  [{item['id']}] {item['name']}")
+        print(
+            f"  [{item['id']}] {item['name']} "
+            f"(инв. {item.get('inventory_number', '-')})"
+        )
 
 
 def handle_check_readiness(equipment: dict[int, dict]) -> None:
@@ -159,6 +168,13 @@ def handle_check_availability(
     if item is None:
         print("Оборудование с таким ID не найдено.")
         return
+    print(f"Прибор: {item['name']}")
+    status = check_equipment_availability(
+        item["operational"],
+        item["under_maintenance"],
+    )
+    if status != "Оборудование готово к работе":
+        print(f"Техническое состояние: {status}")
     booking_date = input_date("Введите дату (ГГГГ-ММ-ДД): ")
     available = is_equipment_available(
         bookings,
@@ -205,10 +221,10 @@ def handle_create_booking(
         return
 
     booking_date = input_date("Введите дату (ГГГГ-ММ-ДД): ")
-    duration_hours = input_float("Введите длительность в часах: ")
-    if duration_hours <= 0:
-        print("Длительность должна быть больше нуля.")
-        return
+    duration_hours = input_float(
+        "Введите длительность в часах: ",
+        min_value=0.5,
+    )
 
     is_student = user["role"].strip().lower() == "студент"
     cost = calculate_booking_cost(
@@ -265,6 +281,64 @@ def show_statistics(
         print("  нет подходящих приборов")
 
 
+def handle_add_equipment(equipment: dict[int, dict]) -> None:
+    """Добавить новое оборудование в систему."""
+    name = input("Введите наименование оборудования: ").strip()
+    if not name:
+        print("Наименование не может быть пустым.")
+        return
+    inv = input("Введите инвентарный номер (например EQ-101): ").strip()
+    level = input_int(
+        "Введите требуемый уровень допуска (1-3): ",
+        min_value=1,
+        max_value=3,
+    )
+    rate = input_float(
+        "Введите почасовую ставку (руб/час): ",
+        min_value=0.0,
+    )
+    add_equipment(
+        equipment=equipment,
+        name=name,
+        inventory_number=inv,
+        operational=True,
+        under_maintenance=False,
+        required_level=level,
+        hourly_rate=rate,
+    )
+    save_equipment(EQUIPMENT_FILE, equipment)
+    print(f"Оборудование '{name}' успешно добавлено.")
+
+
+def handle_add_user(users: dict[int, dict]) -> None:
+    """Добавить нового пользователя в систему."""
+    name = input("Введите ФИО пользователя: ").strip()
+    if not name:
+        print("ФИО не может быть пустым.")
+        return
+    role = input("Введите статус (студент / сотрудник): ").strip().lower()
+    if role not in ("студент", "сотрудник"):
+        role = "студент"
+    level = input_int(
+        "Введите уровень допуска пользователя (1-3): ",
+        min_value=1,
+        max_value=3,
+    )
+    briefing_str = input(
+        "Пройден ли инструктаж по ТБ (да/нет): "
+    ).strip().lower()
+    briefing = (briefing_str == "да")
+    add_user(
+        users=users,
+        name=name,
+        role=role,
+        access_level=level,
+        briefing_passed=briefing,
+    )
+    save_users(USERS_FILE, users)
+    print(f"Пользователь '{name}' успешно добавлен.")
+
+
 def save_all(
     equipment: dict[int, dict],
     users: dict[int, dict],
@@ -282,33 +356,43 @@ def main() -> None:
     users = load_users(USERS_FILE)
     bookings = load_bookings(BOOKINGS_FILE)
 
-    while True:
-        show_menu()
-        choice = input_int("Выберите действие: ")
-        if choice == 1:
-            show_equipment(equipment)
-        elif choice == 2:
-            handle_find_equipment(equipment)
-        elif choice == 3:
-            handle_check_readiness(equipment)
-        elif choice == 4:
-            handle_check_availability(equipment, bookings)
-        elif choice == 5:
-            handle_create_booking(equipment, users, bookings)
-        elif choice == 6:
-            handle_cancel_booking(bookings)
-        elif choice == 7:
-            show_bookings(bookings, equipment, users)
-        elif choice == 8:
-            show_users(users)
-        elif choice == 9:
-            show_statistics(equipment, bookings)
-        elif choice == 0:
-            save_all(equipment, users, bookings)
-            print("Данные сохранены. Выход.")
-            break
-        else:
-            print("Неизвестный пункт меню.")
+    try:
+        while True:
+            show_menu()
+            choice = input_int(
+                "Выберите действие: ",
+                min_value=0,
+                max_value=11,
+            )
+            if choice == 1:
+                show_equipment(equipment)
+            elif choice == 2:
+                handle_find_equipment(equipment)
+            elif choice == 3:
+                handle_check_readiness(equipment)
+            elif choice == 4:
+                handle_check_availability(equipment, bookings)
+            elif choice == 5:
+                handle_create_booking(equipment, users, bookings)
+            elif choice == 6:
+                handle_cancel_booking(bookings)
+            elif choice == 7:
+                show_bookings(bookings, equipment, users)
+            elif choice == 8:
+                show_users(users)
+            elif choice == 9:
+                show_statistics(equipment, bookings)
+            elif choice == 10:
+                handle_add_equipment(equipment)
+            elif choice == 11:
+                handle_add_user(users)
+            elif choice == 0:
+                save_all(equipment, users, bookings)
+                print("Данные сохранены. Выход.")
+                break
+    except (KeyboardInterrupt, EOFError):
+        print("\nЗавершение работы программы.")
+        save_all(equipment, users, bookings)
 
 
 if __name__ == "__main__":
