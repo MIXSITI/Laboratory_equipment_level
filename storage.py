@@ -1,16 +1,9 @@
-"""Функции сохранения и загрузки данных проекта."""
-
 import json
 from datetime import date
 from pathlib import Path
 
 
 def load_json_list(filename: str | Path) -> list:
-    """Загрузить список из JSON-файла.
-
-    При отсутствии файла или некорректном JSON
-    возвращает пустой список.
-    """
     try:
         with open(filename, "r", encoding="utf-8") as file:
             data = json.load(file)
@@ -25,7 +18,6 @@ def load_json_list(filename: str | Path) -> list:
 
 
 def save_json_list(filename: str | Path, data: list) -> None:
-    """Сохранить список в JSON-файл через контекстный менеджер."""
     path = Path(filename)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as file:
@@ -33,7 +25,6 @@ def save_json_list(filename: str | Path, data: list) -> None:
 
 
 def load_equipment(filename: str | Path) -> dict[int, dict]:
-    """Загрузить оборудование из JSON-файла."""
     items = load_json_list(filename)
     result = {}
     for item in items:
@@ -45,12 +36,10 @@ def save_equipment(
     filename: str | Path,
     equipment: dict[int, dict],
 ) -> None:
-    """Сохранить оборудование в JSON-файл."""
     save_json_list(filename, list(equipment.values()))
 
 
 def load_users(filename: str | Path) -> dict[int, dict]:
-    """Загрузить пользователей из JSON-файла."""
     items = load_json_list(filename)
     result = {}
     for item in items:
@@ -59,12 +48,10 @@ def load_users(filename: str | Path) -> dict[int, dict]:
 
 
 def save_users(filename: str | Path, users: dict[int, dict]) -> None:
-    """Сохранить пользователей в JSON-файл."""
     save_json_list(filename, list(users.values()))
 
 
 def load_bookings(filename: str | Path) -> list[dict]:
-    """Загрузить бронирования из JSON-файла."""
     items = load_json_list(filename)
     for item in items:
         raw_date = item.get("booking_date")
@@ -74,7 +61,6 @@ def load_bookings(filename: str | Path) -> list[dict]:
 
 
 def save_bookings(filename: str | Path, bookings: list[dict]) -> None:
-    """Сохранить бронирования в JSON-файл."""
     prepared = []
     for item in bookings:
         copy = dict(item)

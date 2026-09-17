@@ -1,5 +1,3 @@
-"""Точка запуска системы бронирования лабораторного оборудования."""
-
 from pathlib import Path
 
 from bookings import (
@@ -37,7 +35,6 @@ BOOKINGS_FILE = DATA_DIR / "bookings.json"
 
 
 def show_menu() -> None:
-    """Вывести главное меню приложения."""
     print()
     print("=== Система бронирования лабораторного оборудования ===")
     print()
@@ -57,7 +54,6 @@ def show_menu() -> None:
 
 
 def show_equipment(equipment: dict[int, dict]) -> None:
-    """Вывести список оборудования в виде таблицы."""
     items = sort_equipment(equipment)
     if not items:
         print("Список оборудования пуст.")
@@ -84,7 +80,6 @@ def show_equipment(equipment: dict[int, dict]) -> None:
 
 
 def show_users(users: dict[int, dict]) -> None:
-    """Вывести список пользователей."""
     if not users:
         print("Список пользователей пуст.")
         return
@@ -104,7 +99,6 @@ def show_bookings(
     equipment: dict[int, dict],
     users: dict[int, dict],
 ) -> None:
-    """Вывести список бронирований."""
     if not bookings:
         print("Список бронирований пуст.")
         return
@@ -127,7 +121,6 @@ def show_bookings(
 
 
 def handle_find_equipment(equipment: dict[int, dict]) -> None:
-    """Найти и вывести оборудование по названию или инв. номеру."""
     query = input("Введите часть названия или инв. номер: ").strip()
     if not query:
         print("Поисковый запрос не может быть пустым.")
@@ -145,7 +138,6 @@ def handle_find_equipment(equipment: dict[int, dict]) -> None:
 
 
 def handle_check_readiness(equipment: dict[int, dict]) -> None:
-    """Проверить техническую готовность выбранного прибора."""
     equipment_id = input_int("Введите ID оборудования: ")
     item = get_equipment_by_id(equipment, equipment_id)
     if item is None:
@@ -162,7 +154,6 @@ def handle_check_availability(
     equipment: dict[int, dict],
     bookings: list[dict],
 ) -> None:
-    """Проверить доступность оборудования на дату."""
     equipment_id = input_int("Введите ID оборудования: ")
     item = get_equipment_by_id(equipment, equipment_id)
     if item is None:
@@ -189,7 +180,6 @@ def handle_create_booking(
     users: dict[int, dict],
     bookings: list[dict],
 ) -> None:
-    """Создать бронирование после всех проверок ПР1 и ПР2."""
     equipment_id = input_int("Введите ID оборудования: ")
     item = get_equipment_by_id(equipment, equipment_id)
     if item is None:
@@ -251,7 +241,6 @@ def handle_create_booking(
 
 
 def handle_cancel_booking(bookings: list[dict]) -> None:
-    """Отменить бронирование по идентификатору заявки."""
     booking_id = input_int("Введите ID бронирования: ")
     if cancel_booking(bookings, booking_id):
         save_bookings(BOOKINGS_FILE, bookings)
@@ -264,7 +253,6 @@ def show_statistics(
     equipment: dict[int, dict],
     bookings: list[dict],
 ) -> None:
-    """Вывести статистику по оборудованию и бронированиям."""
     stats = get_booking_statistics(bookings)
     print()
     print("=== Статистика ===")
@@ -282,7 +270,6 @@ def show_statistics(
 
 
 def handle_add_equipment(equipment: dict[int, dict]) -> None:
-    """Добавить новое оборудование в систему."""
     name = input("Введите наименование оборудования: ").strip()
     if not name:
         print("Наименование не может быть пустым.")
@@ -311,7 +298,6 @@ def handle_add_equipment(equipment: dict[int, dict]) -> None:
 
 
 def handle_add_user(users: dict[int, dict]) -> None:
-    """Добавить нового пользователя в систему."""
     name = input("Введите ФИО пользователя: ").strip()
     if not name:
         print("ФИО не может быть пустым.")
@@ -320,12 +306,10 @@ def handle_add_user(users: dict[int, dict]) -> None:
     if role not in ("студент", "сотрудник"):
         role = "студент"
     level = input_int(
-        "Введите уровень допуска пользователя (1-3): ",
         min_value=1,
         max_value=3,
     )
     briefing_str = input(
-        "Пройден ли инструктаж по ТБ (да/нет): "
     ).strip().lower()
     briefing = (briefing_str == "да")
     add_user(
@@ -344,14 +328,12 @@ def save_all(
     users: dict[int, dict],
     bookings: list[dict],
 ) -> None:
-    """Сохранить все данные проекта в JSON-файлы."""
     save_equipment(EQUIPMENT_FILE, equipment)
     save_users(USERS_FILE, users)
     save_bookings(BOOKINGS_FILE, bookings)
 
 
 def main() -> None:
-    """Точка запуска: меню приложения и вызов функций проекта."""
     equipment = load_equipment(EQUIPMENT_FILE)
     users = load_users(USERS_FILE)
     bookings = load_bookings(BOOKINGS_FILE)
