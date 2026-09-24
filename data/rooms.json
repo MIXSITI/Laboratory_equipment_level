@@ -2,6 +2,7 @@
     {
         "id": 1,
         "name": "Спектрофотометр UV-1800",
+        "capacity": 5,
         "inventory_number": "EQ-301",
         "operational": true,
         "under_maintenance": false,
@@ -11,6 +12,7 @@
     {
         "id": 2,
         "name": "Сканирующий электронный микроскоп",
+        "capacity": 10,
         "inventory_number": "EQ-505",
         "operational": true,
         "under_maintenance": false,
@@ -20,6 +22,7 @@
     {
         "id": 3,
         "name": "Осциллограф DSO-X 2024A",
+        "capacity": 4,
         "inventory_number": "EQ-110",
         "operational": true,
         "under_maintenance": false,
@@ -29,6 +32,7 @@
     {
         "id": 4,
         "name": "3D-принтер Ultimaker S3",
+        "capacity": 6,
         "inventory_number": "EQ-220",
         "operational": true,
         "under_maintenance": true,

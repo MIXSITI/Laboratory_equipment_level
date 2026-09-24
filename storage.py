@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from models.bookings import Booking
-from models.equipment import Equipment, get_equipment_by_id
+from models.rooms import Room, get_room_by_id
 from models.users import User, get_user_by_id
 
 
@@ -33,25 +33,25 @@ def save_json_list(filename: str | Path, data: list) -> None:
         json.dump(data, file, ensure_ascii=False, indent=4)
 
 
-def load_equipment(filename: str | Path) -> list[Equipment]:
-    """Загрузить оборудование из JSON-файла и преобразовать в объекты."""
+def load_rooms(filename: str | Path) -> list[Room]:
+    """Загрузить помещения/оборудование из JSON и преобразовать в объекты."""
     items = load_json_list(filename)
-    result: list[Equipment] = []
+    result: list[Room] = []
     for item in items:
         if isinstance(item, dict) and "id" in item:
-            result.append(Equipment.from_data(item))
+            result.append(Room.from_data(item))
     return result
 
 
-def save_equipment(
+def save_rooms(
     filename: str | Path,
-    equipment: list[Equipment] | dict,
+    rooms: list[Room] | dict,
 ) -> None:
-    """Сохранить коллекцию объектов оборудования в JSON-файл."""
+    """Сохранить коллекцию объектов помещений в JSON-файл."""
     items = (
-        list(equipment.values())
-        if isinstance(equipment, dict)
-        else equipment
+        list(rooms.values())
+        if isinstance(rooms, dict)
+        else rooms
     )
     prepared = [
         item.to_dict() if hasattr(item, "to_dict") else dict(item)
@@ -85,17 +85,18 @@ def save_users(
 
 def load_bookings(
     filename: str | Path,
-    equipment: Optional[list[Equipment] | dict] = None,
+    rooms: Optional[list[Room] | dict] = None,
     users: Optional[list[User] | dict] = None,
 ) -> list[Booking]:
     """Загрузить бронирования из JSON и восстановить связи с объектами."""
     items = load_json_list(filename)
     result: list[Booking] = []
 
-    # Если списки связанных сущностей не переданы, пытаемся подгрузить
-    if equipment is None:
-        eq_path = Path(filename).parent / "equipment.json"
-        equipment = load_equipment(eq_path)
+    if rooms is None:
+        r_path = Path(filename).parent / "rooms.json"
+        if not r_path.exists():
+            r_path = Path(filename).parent / "equipment.json"
+        rooms = load_rooms(r_path)
     if users is None:
         u_path = Path(filename).parent / "users.json"
         users = load_users(u_path)
@@ -104,10 +105,10 @@ def load_bookings(
         if not isinstance(item, dict) or "id" not in item:
             continue
         booking_id = int(item["id"])
-        eq_id = int(item.get("equipment_id", item.get("room_id", 0)))
+        room_id = int(item.get("room_id", item.get("equipment_id", 0)))
         u_id = int(item.get("user_id", 0))
 
-        eq = get_equipment_by_id(equipment, eq_id)
+        room = get_room_by_id(rooms, room_id)
         user = get_user_by_id(users, u_id)
 
         raw_date = item.get("booking_date")
@@ -128,11 +129,10 @@ def load_bookings(
         cost = float(item.get("cost", 0.0))
         is_cancelled = bool(item.get("is_cancelled", False))
 
-        # Если связаны корректные объекты предметной области
-        if eq is not None and user is not None:
+        if room is not None and user is not None:
             booking = Booking(
                 booking_id=booking_id,
-                equipment=eq,
+                room=room,
                 booking_date=b_date,
                 user=user,
                 duration_hours=duration,
@@ -162,6 +162,6 @@ def save_bookings(
     save_json_list(filename, prepared)
 
 
-# Псевдонимы функций для совместимости с методическими указаниями
-load_rooms = load_equipment
-save_rooms = save_equipment
+# Псевдонимы функций для обратной совместимости
+load_equipment = load_rooms
+save_equipment = save_rooms
