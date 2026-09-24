@@ -1,4 +1,4 @@
-"""Тесты для класса Booking и функций управления бронированием."""
+"""Тесты для класса Booking, Period и функций управления бронированием."""
 
 import sys
 from datetime import date
@@ -12,63 +12,74 @@ if str(ROOT_DIR) not in sys.path:
 import pytest  # noqa: E402
 from models.bookings import (  # noqa: E402
     Booking,
+    Period,
     calculate_booking_cost,
     cancel_booking,
     create_booking,
     get_booking_statistics,
-    is_room_available,
+    is_equipment_available,
 )
-from models.rooms import Room  # noqa: E402
+from models.equipment import Equipment  # noqa: E402
 from models.users import Student, User  # noqa: E402
 from storage import (  # noqa: E402
     load_bookings,
-    load_rooms,
+    load_equipment,
     load_users,
     save_bookings,
-    save_rooms,
+    save_equipment,
     save_users,
 )
 
 
-def test_booking_creation():
-    """Проверить создание объекта Booking и связи с Room и User."""
-    room = Room(1, "Аудитория 301", capacity=30, hourly_rate=1200.0)
+def test_booking_creation_and_period():
+    """Проверить создание объекта Booking, связей и сущности Period."""
+    equipment = Equipment(1, "Спектрофотометр", hourly_rate=1200.0)
     user = Student(1, "Иванов Алексей")
     booking = Booking(
         booking_id=1,
-        room=room,
+        equipment=equipment,
         booking_date=date(2026, 9, 15),
         user=user,
         duration_hours=3.0,
         cost=1800.0,
     )
     assert booking.id == 1
-    assert booking.room is room
-    assert booking.equipment is room
+    assert booking.equipment is equipment
     assert booking.user is user
+
+    # Проверка инкапсуляции сущности Период
+    assert isinstance(booking.period, Period)
     assert booking.booking_date == date(2026, 9, 15)
     assert booking.duration_hours == 3.0
     assert booking.cost == 1800.0
     assert booking.is_cancelled is False
 
 
+def test_period_entity():
+    """Проверить сущность Period (период бронирования)."""
+    p = Period("2026-10-01", 2.5)
+    assert p.date == date(2026, 10, 1)
+    assert p.duration_hours == 2.5
+    assert "2026-10-01" in str(p)
+
+
 def test_booking_str():
     """Проверить строковое представление объекта Booking (__str__)."""
-    room = Room(1, "Аудитория 301")
+    equipment = Equipment(1, "Микроскоп")
     user = User(1, "Петров")
-    booking = Booking(1, room, date(2026, 10, 1), user, 2.0, 1000.0)
+    booking = Booking(1, equipment, date(2026, 10, 1), user, 2.0, 1000.0)
     text = str(booking)
     assert "Заявка #1" in text
     assert "[АКТИВНО]" in text
-    assert "Аудитория 301" in text
+    assert "Микроскоп" in text
     assert "Петров" in text
 
 
 def test_booking_status_property():
     """Проверить свойство status объекта Booking (@property)."""
-    room = Room(1, "Аудитория 301")
+    equipment = Equipment(1, "Прибор")
     user = User(1, "Пользователь")
-    booking = Booking(1, room, date(2026, 9, 15), user)
+    booking = Booking(1, equipment, date(2026, 9, 15), user)
 
     assert booking.status == "Подтверждено"
     booking.cancel()
@@ -78,10 +89,10 @@ def test_booking_status_property():
 
 def test_booking_cancel():
     """Проверить, что отмена не удаляет бронирование, а меняет его статус."""
-    room = Room(1, "Аудитория 301")
+    equipment = Equipment(1, "Прибор")
     user = User(1, "Пользователь")
     bookings = []
-    booking = create_booking(bookings, room, date(2026, 9, 20), user)
+    booking = create_booking(bookings, equipment, date(2026, 9, 20), user)
 
     assert cancel_booking(bookings, booking.id) is True
     assert len(bookings) == 1
@@ -89,45 +100,45 @@ def test_booking_cancel():
     assert bookings[0].status == "Отменено"
 
 
-def test_is_room_available():
-    """Проверить функцию проверки доступности помещения."""
+def test_is_equipment_available():
+    """Проверить функцию проверки доступности оборудования."""
     bookings = []
-    room = Room(1, "Аудитория 301")
+    equipment = Equipment(1, "Прибор")
     booking_date = date(2026, 9, 15)
-    assert is_room_available(bookings, room, booking_date) is True
+    assert is_equipment_available(bookings, equipment, booking_date) is True
 
 
 def test_duplicate_booking_forbidden():
     """Проверить запрет повторного активного бронирования на одну дату."""
     bookings = []
-    room = Room(1, "Аудитория 301")
+    equipment = Equipment(1, "Прибор")
     user1 = User(1, "Пользователь 1")
     user2 = User(2, "Пользователь 2")
     booking_date = date(2026, 9, 15)
 
-    create_booking(bookings, room, booking_date, user1)
-    second_booking = create_booking(bookings, room, booking_date, user2)
+    create_booking(bookings, equipment, booking_date, user1)
+    second_booking = create_booking(bookings, equipment, booking_date, user2)
     assert second_booking is None
-    assert is_room_available(bookings, room, booking_date) is False
+    assert is_equipment_available(bookings, equipment, booking_date) is False
 
 
 def test_cancelled_booking_frees_date():
     """Проверить правило: отмененное бронирование освобождает дату."""
     bookings = []
-    room = Room(1, "Аудитория 301")
+    equipment = Equipment(1, "Прибор")
     user1 = User(1, "Пользователь 1")
     user2 = User(2, "Пользователь 2")
     booking_date = date(2026, 9, 15)
 
-    booking_1 = create_booking(bookings, room, booking_date, user1)
+    booking_1 = create_booking(bookings, equipment, booking_date, user1)
     assert booking_1 is not None
 
     booking_1.cancel()
     assert booking_1.is_cancelled is True
 
-    assert is_room_available(bookings, room, booking_date) is True
+    assert is_equipment_available(bookings, equipment, booking_date) is True
 
-    booking_2 = create_booking(bookings, room, booking_date, user2)
+    booking_2 = create_booking(bookings, equipment, booking_date, user2)
     assert booking_2 is not None
     assert booking_2.id != booking_1.id
     assert len(bookings) == 2
@@ -143,33 +154,32 @@ def test_calculate_booking_cost():
 
 def test_get_booking_statistics():
     """Проверить статистику по активным и общим бронированиям."""
-    r1 = Room(1, "Аудитория 1")
-    r2 = Room(2, "Аудитория 2")
+    e1 = Equipment(1, "Прибор 1")
+    e2 = Equipment(2, "Прибор 2")
     u = User(1, "Пользователь")
 
     bookings = [
-        Booking(1, r1, date(2026, 9, 10), u, cost=1000.0),
-        Booking(2, r2, date(2026, 9, 11), u, cost=1500.0),
-        Booking(3, r1, date(2026, 9, 12), u, cost=500.0, is_cancelled=True),
+        Booking(1, e1, date(2026, 9, 10), u, cost=1000.0),
+        Booking(2, e2, date(2026, 9, 11), u, cost=1500.0),
+        Booking(3, e1, date(2026, 9, 12), u, cost=500.0, is_cancelled=True),
     ]
     stats = get_booking_statistics(bookings)
     assert stats["bookings_count"] == 2
     assert stats["total_bookings"] == 3
-    assert stats["unique_rooms"] == 2
+    assert stats["unique_equipment"] == 2
     assert stats["total_cost"] == 2500.0
 
 
-def test_storage_rooms_users_bookings(tmp_path: Path):
+def test_storage_equipment_users_bookings(tmp_path: Path):
     """Проверить сквозное сохранение и загрузку объектов через JSON."""
-    rooms_file = tmp_path / "rooms.json"
+    eq_file = tmp_path / "equipment.json"
     users_file = tmp_path / "users.json"
     book_file = tmp_path / "bookings.json"
 
-    rooms = [
-        Room(
-            room_id=1,
-            name="Аудитория 301",
-            capacity=30,
+    equipment = [
+        Equipment(
+            equipment_id=1,
+            name="Микроскоп",
             inventory_number="EQ-001",
             operational=True,
             under_maintenance=False,
@@ -177,10 +187,10 @@ def test_storage_rooms_users_bookings(tmp_path: Path):
             hourly_rate=500.0,
         )
     ]
-    save_rooms(rooms_file, rooms)
-    loaded_r = load_rooms(rooms_file)
-    assert len(loaded_r) == 1
-    assert loaded_r[0].name == "Аудитория 301"
+    save_equipment(eq_file, equipment)
+    loaded_eq = load_equipment(eq_file)
+    assert len(loaded_eq) == 1
+    assert loaded_eq[0].name == "Микроскоп"
 
     users = [
         Student(1, "Иванов Алексей", access_level=2, briefing_passed=True)
@@ -194,7 +204,7 @@ def test_storage_rooms_users_bookings(tmp_path: Path):
     bookings = [
         Booking(
             booking_id=1,
-            room=loaded_r[0],
+            equipment=loaded_eq[0],
             booking_date=date(2026, 10, 1),
             user=loaded_users[0],
             duration_hours=2.0,
@@ -202,10 +212,10 @@ def test_storage_rooms_users_bookings(tmp_path: Path):
         )
     ]
     save_bookings(book_file, bookings)
-    loaded_b = load_bookings(book_file, loaded_r, loaded_users)
+    loaded_b = load_bookings(book_file, loaded_eq, loaded_users)
     assert len(loaded_b) == 1
     assert loaded_b[0].booking_date == date(2026, 10, 1)
-    assert loaded_b[0].room.name == "Аудитория 301"
+    assert loaded_b[0].equipment.name == "Микроскоп"
     assert loaded_b[0].user.name == "Иванов Алексей"
 
 

@@ -1,5 +1,3 @@
-"""Тесты для классов User, Student, Staff и функций работы с пользователями."""
-
 import sys
 from pathlib import Path
 

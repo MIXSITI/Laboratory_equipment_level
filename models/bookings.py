@@ -1,41 +1,89 @@
-"""Класс Booking и функции для создания и проверки бронирований."""
+"""Класс Booking, Period и функции для создания и проверки бронирований."""
 
 from datetime import date
 from typing import Optional
 
-from .rooms import Room
+from .equipment import Equipment
 from .users import User
 
 
+class Period:
+    """Сущность периода бронирования: дата и длительность в часах.
+
+    Логически представляет интервал времени резервирования прибора.
+    Отдельно в самостоятельную модель/файл не выносится,
+    а входит в состав сущности Бронирование (Booking).
+    """
+
+    def __init__(
+        self,
+        booking_date: date | str,
+        duration_hours: float = 1.0,
+    ) -> None:
+        """Инициализировать период бронирования."""
+        if isinstance(booking_date, str):
+            self.date: date = date.fromisoformat(booking_date)
+        else:
+            self.date = booking_date
+        self.duration_hours = duration_hours
+
+    def __str__(self) -> str:
+        """Строковое представление периода бронирования."""
+        return f"{self.date} ({self.duration_hours} ч.)"
+
+
 class Booking:
-    """Бронирование помещения / оборудования пользователем."""
+    """Бронирование оборудования пользователем лаборатории.
+
+    Связывает сущности Оборудование (Equipment), Пользователь (User)
+    и инкапсулирует сущность Период (Period: дата и длительность сеанса).
+    """
 
     def __init__(
         self,
         booking_id: int,
-        room: Room,
+        equipment: Equipment,
         booking_date: date | str,
         user: User,
         duration_hours: float = 1.0,
         cost: float = 0.0,
         is_cancelled: bool = False,
     ) -> None:
-        """Создать объект бронирования."""
+        """Создать объект бронирования оборудования."""
         self.id = booking_id
-        self.room = room
-        if isinstance(booking_date, str):
-            self.booking_date: date = date.fromisoformat(booking_date)
-        else:
-            self.booking_date = booking_date
+        self.equipment = equipment
         self.user = user
-        self.duration_hours = duration_hours
         self.cost = cost
         self.is_cancelled = is_cancelled
 
+        # Инкапсуляция сущности Период
+        self.period = Period(booking_date, duration_hours)
+
     @property
-    def equipment(self) -> Room:
-        """Псевдоним room для совместимости с кодом оборудования."""
-        return self.room
+    def booking_date(self) -> date:
+        """Календарная дата бронирования из сущности Период."""
+        return self.period.date
+
+    @booking_date.setter
+    def booking_date(self, value: date | str) -> None:
+        if isinstance(value, str):
+            self.period.date = date.fromisoformat(value)
+        else:
+            self.period.date = value
+
+    @property
+    def duration_hours(self) -> float:
+        """Длительность сеанса в часах из сущности Период."""
+        return self.period.duration_hours
+
+    @duration_hours.setter
+    def duration_hours(self, value: float) -> None:
+        self.period.duration_hours = value
+
+    @property
+    def room(self) -> Equipment:
+        """Псевдоним прибора для совместимости с примерами методички."""
+        return self.equipment
 
     @property
     def status(self) -> str:
@@ -47,18 +95,12 @@ class Booking:
         self.is_cancelled = True
 
     def to_dict(self) -> dict:
-        """Преобразовать объект бронирования в структуру для JSON."""
-        b_date = (
-            self.booking_date.isoformat()
-            if isinstance(self.booking_date, date)
-            else str(self.booking_date)
-        )
+        """Преобразовать объект бронирования в структуру JSON."""
         return {
             "id": self.id,
-            "room_id": self.room.id if self.room else 0,
-            "equipment_id": self.room.id if self.room else 0,
-            "booking_date": b_date,
+            "equipment_id": self.equipment.id if self.equipment else 0,
             "user_id": self.user.id if self.user else 0,
+            "booking_date": self.booking_date.isoformat(),
             "duration_hours": self.duration_hours,
             "cost": self.cost,
             "is_cancelled": self.is_cancelled,
@@ -66,36 +108,40 @@ class Booking:
 
     def __str__(self) -> str:
         """Вернуть строковое представление бронирования."""
-        room_name = self.room.name if self.room else "-"
-        user_name = self.user.name if self.user else "-"
+        eq_name = self.equipment.name if self.equipment else "-"
+        u_name = self.user.name if self.user else "-"
         state = "[ОТМЕНЕНО]" if self.is_cancelled else "[АКТИВНО]"
         return (
-            f"Заявка #{self.id} {state}: {room_name} | {user_name} | "
-            f"Дата: {self.booking_date} | {self.duration_hours} ч. | "
-            f"{self.cost} руб."
+            f"Заявка #{self.id} {state}: {eq_name} | {u_name} | "
+            f"Период: {self.period} | {self.cost} руб."
         )
 
 
-def is_room_available(
+def is_equipment_available(
     bookings: list[Booking],
-    room: Room | int,
+    equipment: Equipment | int,
     booking_date: date | str,
 ) -> bool:
-    """Проверить, свободно ли помещение/оборудование на указанную дату.
+    """Проверить, свободно ли оборудование на указанную дату.
 
-    Отмененные бронирования не блокируют помещение.
+    Отмененные бронирования не блокируют оборудование.
     """
-    room_id = room.id if isinstance(room, Room) else room
+    eq_id = equipment.id if isinstance(equipment, Equipment) else equipment
     if isinstance(booking_date, str):
         booking_date = date.fromisoformat(booking_date)
 
     for booking in bookings:
         if getattr(booking, "is_cancelled", False):
             continue
-        if hasattr(booking, "room") and booking.room:
-            b_room_id = booking.room.id
+
+        b_eq = getattr(booking, "equipment", None)
+        if b_eq is None and hasattr(booking, "room"):
+            b_eq = booking.room
+
+        if b_eq:
+            b_eq_id = b_eq.id
         elif isinstance(booking, dict):
-            b_room_id = booking.get("room_id", booking.get("equipment_id"))
+            b_eq_id = booking.get("equipment_id", booking.get("room_id"))
         else:
             continue
 
@@ -105,12 +151,12 @@ def is_room_available(
         if isinstance(b_date, str):
             b_date = date.fromisoformat(b_date)
 
-        if b_room_id == room_id and b_date == booking_date:
+        if b_eq_id == eq_id and b_date == booking_date:
             return False
     return True
 
 
-is_equipment_available = is_room_available
+is_room_available = is_equipment_available
 
 
 def calculate_booking_cost(
@@ -130,22 +176,30 @@ def calculate_booking_cost(
 
 def create_booking(
     bookings: list[Booking],
-    room: Room | int,
+    equipment: Equipment | int,
     booking_date: date | str,
     user: Optional[User] = None,
     duration_hours: float = 1.0,
     cost: Optional[float] = None,
     user_id: Optional[int] = None,
+    room: Optional[Equipment | int] = None,
 ) -> Optional[Booking]:
     """Создать новое бронирование и добавить его в коллекцию."""
-    if not is_room_available(bookings, room, booking_date):
+    target_equipment = equipment if equipment is not None else room
+    if target_equipment is None:
+        return None
+
+    if not is_equipment_available(bookings, target_equipment, booking_date):
         return None
 
     booking_id = max((b.id for b in bookings), default=0) + 1
 
-    if isinstance(room, int):
-        from .rooms import Room as RoomClass
-        room = RoomClass(room_id=room, name=f"Помещение #{room}")
+    if isinstance(target_equipment, int):
+        from .equipment import Equipment as EqClass
+        target_equipment = EqClass(
+            equipment_id=target_equipment,
+            name=f"Оборудование #{target_equipment}",
+        )
 
     if user is None and user_id is not None:
         from .users import User as UserClass
@@ -158,12 +212,12 @@ def create_booking(
         discount = user.get_discount() if hasattr(user, "get_discount") else (
             0.5 if user.is_student() else 0.0
         )
-        base = room.hourly_rate * duration_hours
+        base = target_equipment.hourly_rate * duration_hours
         cost = round(base * (1.0 - discount), 2)
 
     new_booking = Booking(
         booking_id=booking_id,
-        room=room,
+        equipment=target_equipment,
         booking_date=booking_date,
         user=user,
         duration_hours=duration_hours,
@@ -191,27 +245,30 @@ def cancel_booking(
 
 
 def get_booking_status(is_available: bool) -> str:
-    """Вернуть текстовый статус доступности помещения (из ПР1)."""
+    """Вернуть текстовый статус доступности оборудования (из ПР1)."""
     if is_available:
-        return "Помещение доступно для бронирования"
-    return "Помещение уже занято"
+        return "Оборудование доступно для бронирования"
+    return "Оборудование уже занято"
 
 
 def get_booking_statistics(bookings: list[Booking]) -> dict:
-    """Собрать статистику по списку бронирований."""
+    """Собрать статистику по списку бронирований лаборатории."""
     active_bookings = [
         b for b in bookings
         if not getattr(b, "is_cancelled", False)
     ]
-    booked_room_ids = set()
+    booked_ids = set()
     total_cost = 0.0
     for b in active_bookings:
-        if hasattr(b, "room") and b.room:
-            booked_room_ids.add(b.room.id)
+        eq = getattr(b, "equipment", None)
+        if eq is None and hasattr(b, "room"):
+            eq = b.room
+        if eq:
+            booked_ids.add(eq.id)
         elif isinstance(b, dict):
-            r_id = b.get("room_id", b.get("equipment_id"))
-            if r_id:
-                booked_room_ids.add(r_id)
+            eq_id = b.get("equipment_id", b.get("room_id"))
+            if eq_id:
+                booked_ids.add(eq_id)
         cost_val = getattr(b, "cost", None)
         if cost_val is None and isinstance(b, dict):
             cost_val = b.get("cost", 0.0)
@@ -220,8 +277,8 @@ def get_booking_statistics(bookings: list[Booking]) -> dict:
     return {
         "bookings_count": len(active_bookings),
         "total_bookings": len(bookings),
-        "unique_rooms": len(booked_room_ids),
-        "unique_equipment": len(booked_room_ids),
+        "unique_equipment": len(booked_ids),
+        "unique_rooms": len(booked_ids),
         "total_cost": round(total_cost, 2),
     }
 
@@ -233,18 +290,21 @@ def show_bookings(bookings: list[Booking]) -> None:
         return
     print()
     print(
-        f"{'ID':<4}{'Помещение / прибор':<32}{'Пользователь':<20}"
+        f"{'ID':<4}{'Оборудование':<32}{'Пользователь':<20}"
         f"{'Дата':<12}{'Часы':<6}{'Сумма':<8}Статус"
     )
     print("-" * 92)
     for item in bookings:
-        r_name = item.room.name[:30] if getattr(item, "room", None) else "-"
+        eq = getattr(item, "equipment", None)
+        if eq is None and hasattr(item, "room"):
+            eq = item.room
+        eq_name = eq.name[:30] if eq else "-"
         u_name = item.user.name[:18] if getattr(item, "user", None) else "-"
         b_date = getattr(item, "booking_date", "-")
         duration = getattr(item, "duration_hours", 0.0)
         cost = getattr(item, "cost", 0.0)
         status = getattr(item, "status", "Подтверждено")
         print(
-            f"{item.id:<4}{r_name:<32}{u_name:<20}"
+            f"{item.id:<4}{eq_name:<32}{u_name:<20}"
             f"{b_date!s:<12}{duration:<6}{cost:<8}{status}"
         )
