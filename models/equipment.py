@@ -235,5 +235,7 @@ add_room = add_equipment
 find_room = find_equipment
 sort_rooms = sort_equipment
 get_room_by_id = get_equipment_by_id
+find_equipment_by_id = get_equipment_by_id
+find_room_by_id = get_equipment_by_id
 show_rooms = show_equipment
 filter_rooms_by_level = filter_equipment_by_level

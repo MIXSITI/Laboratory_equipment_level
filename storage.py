@@ -33,9 +33,16 @@ def save_json_list(filename: str | Path, data: list) -> None:
         json.dump(data, file, ensure_ascii=False, indent=4)
 
 
-def load_equipment(filename: str | Path) -> list[Equipment]:
+def load_equipment(
+    filename: str | Path = "data/equipment.json",
+) -> list[Equipment]:
     """Загрузить оборудование из JSON и преобразовать в объекты."""
-    items = load_json_list(filename)
+    target_path = Path(filename)
+    if not target_path.exists() and "rooms.json" in str(target_path):
+        fallback = target_path.parent / "equipment.json"
+        if fallback.exists():
+            target_path = fallback
+    items = load_json_list(target_path)
     result: list[Equipment] = []
     for item in items:
         if isinstance(item, dict) and "id" in item:

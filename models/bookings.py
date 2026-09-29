@@ -228,6 +228,18 @@ def create_booking(
     return new_booking
 
 
+def find_booking_by_id(
+    bookings: list[Booking],
+    booking_id: int,
+) -> Optional[Booking]:
+    """Найти бронирование по идентификатору."""
+    for booking in bookings:
+        b_id = booking.id if hasattr(booking, "id") else booking.get("id")
+        if b_id == booking_id:
+            return booking
+    return None
+
+
 def cancel_booking(
     bookings: list[Booking],
     booking_id: int,

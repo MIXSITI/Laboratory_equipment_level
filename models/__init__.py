@@ -1,7 +1,12 @@
 """Пакет models объектной модели предметной области."""
 
-from .bookings import Booking, Period
-from .equipment import Equipment, Room
+from .bookings import Booking, Period, find_booking_by_id
+from .equipment import (
+    Equipment,
+    Room,
+    find_equipment_by_id,
+    find_room_by_id,
+)
 from .users import Staff, Student, User
 
 __all__ = [
@@ -12,4 +17,7 @@ __all__ = [
     "Staff",
     "Period",
     "Booking",
+    "find_equipment_by_id",
+    "find_room_by_id",
+    "find_booking_by_id",
 ]
