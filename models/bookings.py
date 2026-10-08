@@ -6,14 +6,12 @@ from .users import User
 
 
 class Period:
-    """Сущность периода бронирования: дата и длительность в часах."""
 
     def __init__(
         self,
         booking_date: date | str,
         duration_hours: float = 1.0,
     ) -> None:
-        """Инициализировать период бронирования."""
         if isinstance(booking_date, str):
             self.date: date = date.fromisoformat(booking_date)
         else:
@@ -21,12 +19,10 @@ class Period:
         self.duration_hours = duration_hours
 
     def __str__(self) -> str:
-        """Строковое представление периода бронирования."""
         return f"{self.date} ({self.duration_hours} ч.)"
 
 
 class Booking:
-    """Бронирование оборудования пользователем лаборатории."""
 
     def __init__(
         self,
@@ -38,7 +34,6 @@ class Booking:
         cost: float = 0.0,
         is_cancelled: bool = False,
     ) -> None:
-        """Создать объект бронирования оборудования."""
         self.id = booking_id
         self.equipment = equipment
         self.user = user
@@ -48,7 +43,6 @@ class Booking:
 
     @property
     def booking_date(self) -> date:
-        """Календарная дата бронирования."""
         return self.period.date
 
     @booking_date.setter
@@ -60,7 +54,6 @@ class Booking:
 
     @property
     def duration_hours(self) -> float:
-        """Длительность сеанса в часах."""
         return self.period.duration_hours
 
     @duration_hours.setter
@@ -69,20 +62,16 @@ class Booking:
 
     @property
     def room(self) -> Equipment:
-        """Псевдоним прибора."""
         return self.equipment
 
     @property
     def status(self) -> str:
-        """Текстовый статус состояния бронирования."""
         return "Отменено" if self.is_cancelled else "Подтверждено"
 
     def cancel(self) -> None:
-        """Отменить бронирование, изменив его состояние."""
         self.is_cancelled = True
 
     def to_dict(self) -> dict:
-        """Преобразовать объект бронирования в структуру JSON."""
         return {
             "id": self.id,
             "equipment_id": self.equipment.id if self.equipment else 0,
@@ -94,7 +83,6 @@ class Booking:
         }
 
     def __str__(self) -> str:
-        """Вернуть строковое представление бронирования."""
         eq_name = self.equipment.name if self.equipment else "-"
         u_name = self.user.name if self.user else "-"
         state = "[ОТМЕНЕНО]" if self.is_cancelled else "[АКТИВНО]"
@@ -109,10 +97,6 @@ def is_equipment_available(
     equipment: Equipment | int,
     booking_date: date | str,
 ) -> bool:
-    """Проверить, свободно ли оборудование на указанную дату.
-
-    Отмененные бронирования не блокируют оборудование.
-    """
     eq_id = equipment.id if isinstance(equipment, Equipment) else equipment
     if isinstance(booking_date, str):
         booking_date = date.fromisoformat(booking_date)
@@ -151,7 +135,6 @@ def calculate_booking_cost(
     hours: float,
     student: bool,
 ) -> float:
-    """Рассчитать стоимость бронирования со скидкой."""
     base_cost = rate * hours
     if student:
         discount = 0.5
@@ -171,7 +154,6 @@ def create_booking(
     user_id: Optional[int] = None,
     room: Optional[Equipment | int] = None,
 ) -> Optional[Booking]:
-    """Создать новое бронирование и добавить его в коллекцию."""
     target_equipment = equipment if equipment is not None else room
     if target_equipment is None:
         return None
@@ -219,7 +201,6 @@ def find_booking_by_id(
     bookings: list[Booking],
     booking_id: int,
 ) -> Optional[Booking]:
-    """Найти бронирование по идентификатору."""
     for booking in bookings:
         b_id = booking.id if hasattr(booking, "id") else booking.get("id")
         if b_id == booking_id:
@@ -231,7 +212,6 @@ def cancel_booking(
     bookings: list[Booking],
     booking_id: int,
 ) -> bool:
-    """Отменить бронирование через метод объекта cancel()."""
     for booking in bookings:
         b_id = booking.id if hasattr(booking, "id") else booking.get("id")
         if b_id == booking_id:
@@ -244,14 +224,12 @@ def cancel_booking(
 
 
 def get_booking_status(is_available: bool) -> str:
-    """Вернуть текстовый статус доступности оборудования."""
     if is_available:
         return "Оборудование доступно для бронирования"
     return "Оборудование уже занято"
 
 
 def get_booking_statistics(bookings: list[Booking]) -> dict:
-    """Собрать статистику по списку бронирований лаборатории."""
     active_bookings = [
         b for b in bookings
         if not getattr(b, "is_cancelled", False)
@@ -283,7 +261,6 @@ def get_booking_statistics(bookings: list[Booking]) -> dict:
 
 
 def show_bookings(bookings: list[Booking]) -> None:
-    """Вывести список бронирований в виде таблицы."""
     if not bookings:
         print("Список бронирований пуст.")
         return

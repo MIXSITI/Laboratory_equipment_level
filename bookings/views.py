@@ -6,7 +6,6 @@ from storage import load_bookings, load_equipment, load_users
 
 
 def bookings(request) -> HttpResponse:
-    """Отобразить список бронирований."""
     equipment_items = load_equipment("data/equipment.json")
     users_list = load_users("data/users.json")
     bookings_list = load_bookings(
@@ -44,7 +43,6 @@ def bookings(request) -> HttpResponse:
 
 
 def booking_detail(request, booking_id: int) -> HttpResponse:
-    """Отобразить карточку отдельного бронирования."""
     equipment_items = load_equipment("data/equipment.json")
     users_list = load_users("data/users.json")
     bookings_list = load_bookings(

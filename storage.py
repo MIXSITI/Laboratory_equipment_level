@@ -9,7 +9,6 @@ from models.users import User, get_user_by_id
 
 
 def load_json_list(filename: str | Path) -> list:
-    """Загрузить список из JSON-файла через контекстный менеджер with."""
     try:
         with open(filename, "r", encoding="utf-8") as file:
             data = json.load(file)
@@ -24,7 +23,6 @@ def load_json_list(filename: str | Path) -> list:
 
 
 def save_json_list(filename: str | Path, data: list) -> None:
-    """Сохранить список в JSON-файл через контекстный менеджер with."""
     path = Path(filename)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as file:
@@ -34,7 +32,6 @@ def save_json_list(filename: str | Path, data: list) -> None:
 def load_equipment(
     filename: str | Path = "data/equipment.json",
 ) -> list[Equipment]:
-    """Загрузить оборудование из JSON и преобразовать в объекты."""
     target_path = Path(filename)
     if not target_path.exists() and "rooms.json" in str(target_path):
         fallback = target_path.parent / "equipment.json"
@@ -52,7 +49,6 @@ def save_equipment(
     filename: str | Path,
     equipment: list[Equipment] | dict,
 ) -> None:
-    """Сохранить коллекцию объектов оборудования в JSON-файл."""
     items = (
         list(equipment.values())
         if isinstance(equipment, dict)
@@ -66,7 +62,6 @@ def save_equipment(
 
 
 def load_users(filename: str | Path) -> list[User]:
-    """Загрузить пользователей из JSON-файла и преобразовать в объекты."""
     items = load_json_list(filename)
     result: list[User] = []
     for item in items:
@@ -79,7 +74,6 @@ def save_users(
     filename: str | Path,
     users: list[User] | dict,
 ) -> None:
-    """Сохранить коллекцию объектов пользователей в JSON-файл."""
     items = list(users.values()) if isinstance(users, dict) else users
     prepared = [
         item.to_dict() if hasattr(item, "to_dict") else dict(item)
@@ -93,7 +87,6 @@ def load_bookings(
     equipment: Optional[list[Equipment] | dict] = None,
     users: Optional[list[User] | dict] = None,
 ) -> list[Booking]:
-    """Загрузить бронирования из JSON и восстановить связи с объектами."""
     items = load_json_list(filename)
     result: list[Booking] = []
 
@@ -151,7 +144,6 @@ def save_bookings(
     filename: str | Path,
     bookings: list[Booking],
 ) -> None:
-    """Сохранить бронирования в JSON-файл с заменой объектов на ID."""
     prepared = []
     for item in bookings:
         if hasattr(item, "to_dict"):

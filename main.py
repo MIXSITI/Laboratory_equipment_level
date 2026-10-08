@@ -40,7 +40,6 @@ BOOKINGS_FILE = DATA_DIR / "bookings.json"
 
 
 def show_menu() -> None:
-    """Вывести главное меню приложения."""
     print()
     print("=== Система бронирования лабораторного оборудования ===")
     print()
@@ -60,7 +59,6 @@ def show_menu() -> None:
 
 
 def handle_find_equipment(equipment: list[Equipment]) -> None:
-    """Найти и вывести оборудование по названию или инв. номеру."""
     query = input("Введите часть названия или инв. номер: ").strip()
     if not query:
         print("Поисковый запрос не может быть пустым.")
@@ -75,7 +73,6 @@ def handle_find_equipment(equipment: list[Equipment]) -> None:
 
 
 def handle_check_readiness(equipment: list[Equipment]) -> None:
-    """Проверить техническую готовность выбранного прибора."""
     equipment_id = input_int("Введите ID оборудования: ")
     item = get_equipment_by_id(equipment, equipment_id)
     if item is None:
@@ -88,7 +85,6 @@ def handle_check_availability(
     equipment: list[Equipment],
     bookings: list[Booking],
 ) -> None:
-    """Проверить доступность оборудования на дату."""
     equipment_id = input_int("Введите ID оборудования: ")
     item = get_equipment_by_id(equipment, equipment_id)
     if item is None:
@@ -111,7 +107,6 @@ def create_new_booking(
     users: list[User],
     bookings: list[Booking],
 ) -> None:
-    """Создать бронирование оборудования в объектной модели."""
     equipment_id = input_int("Введите ID оборудования: ")
     item = get_equipment_by_id(equipment, equipment_id)
     if item is None:
@@ -170,7 +165,6 @@ def create_new_booking(
 
 
 def handle_cancel_booking(bookings: list[Booking]) -> None:
-    """Отменить бронирование по идентификатору заявки."""
     booking_id = input_int("Введите ID бронирования: ")
     if cancel_booking(bookings, booking_id):
         save_bookings(BOOKINGS_FILE, bookings)
@@ -183,7 +177,6 @@ def show_statistics(
     equipment: list[Equipment],
     bookings: list[Booking],
 ) -> None:
-    """Вывести статистику по оборудованию и бронированиям."""
     stats = get_booking_statistics(bookings)
     print()
     print("=== Статистика ===")
@@ -202,7 +195,6 @@ def show_statistics(
 
 
 def handle_add_equipment(equipment: list[Equipment]) -> None:
-    """Добавить новое оборудование в систему."""
     name = input("Введите наименование оборудования: ").strip()
     if not name:
         print("Наименование не может быть пустым.")
@@ -231,7 +223,6 @@ def handle_add_equipment(equipment: list[Equipment]) -> None:
 
 
 def handle_add_user(users: list[User]) -> None:
-    """Добавить нового пользователя в систему."""
     name = input("Введите ФИО пользователя: ").strip()
     if not name:
         print("ФИО не может быть пустым.")
@@ -266,14 +257,12 @@ def save_all(
     users: list[User],
     bookings: list[Booking],
 ) -> None:
-    """Сохранить все данные проекта в JSON-файлы."""
     save_equipment(EQUIPMENT_FILE, equipment)
     save_users(USERS_FILE, users)
     save_bookings(BOOKINGS_FILE, bookings)
 
 
 def main() -> None:
-    """Точка запуска: меню приложения и вызов функций проекта."""
     equipment = load_equipment(EQUIPMENT_FILE)
     users = load_users(USERS_FILE)
     bookings = load_bookings(BOOKINGS_FILE, equipment, users)

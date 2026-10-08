@@ -8,7 +8,6 @@ from django.test import Client  # noqa: E402
 
 
 def test_homepage_view():
-    """Проверка главной страницы."""
     client = Client()
     response = client.get("/")
     assert response.status_code == 200
@@ -16,7 +15,6 @@ def test_homepage_view():
 
 
 def test_equipment_list_view():
-    """Проверка списка оборудования."""
     client = Client()
     response = client.get("/equipment/")
     assert response.status_code == 200
@@ -24,7 +22,6 @@ def test_equipment_list_view():
 
 
 def test_equipment_detail_view():
-    """Проверка детальной информации оборудования и ошибки 404."""
     client = Client()
     response = client.get("/equipment/1/")
     assert response.status_code == 200
@@ -36,7 +33,6 @@ def test_equipment_detail_view():
 
 
 def test_rooms_views_compat():
-    """Проверка совместимости маршрутов /rooms/."""
     client = Client()
     response = client.get("/rooms/")
     assert response.status_code == 200
@@ -49,7 +45,6 @@ def test_rooms_views_compat():
 
 
 def test_bookings_views():
-    """Проверка списка бронирований и детальной страницы."""
     client = Client()
     response = client.get("/bookings/")
     assert response.status_code == 200

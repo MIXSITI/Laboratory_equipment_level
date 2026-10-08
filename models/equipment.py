@@ -3,7 +3,6 @@ from typing import Optional
 
 
 class Equipment:
-    """Лабораторное оборудование учебно-научной лаборатории."""
 
     def __init__(
         self,
@@ -16,7 +15,6 @@ class Equipment:
         hourly_rate: float = 0.0,
         capacity: int = 1,
     ) -> None:
-        """Создать объект лабораторного оборудования."""
         self.id = equipment_id
         self.name = name
         self.inventory_number = inventory_number
@@ -28,11 +26,9 @@ class Equipment:
 
     @property
     def is_ready(self) -> bool:
-        """Флаг технической готовности оборудования к работе."""
         return self.operational and not self.under_maintenance
 
     def check_readiness(self) -> str:
-        """Проверить готовность прибора к эксплуатации."""
         if not self.operational:
             return "Оборудование неисправно"
         if self.under_maintenance:
@@ -40,26 +36,21 @@ class Equipment:
         return "Оборудование готово к работе"
 
     def is_suitable_for_level(self, user_level: int) -> bool:
-        """Проверить соответствие квалификационного допуска пользователя."""
         return user_level >= self.required_level
 
     def is_suitable_for(self, people_count: int) -> bool:
-        """Проверить вместимость прибора / рабочего стенда."""
         return self.capacity >= people_count
 
     @staticmethod
     def validate_rate(rate: float) -> bool:
-        """Проверить корректность почасовой ставки."""
         return rate >= 0.0
 
     @staticmethod
     def validate_level(level: int) -> bool:
-        """Проверить корректность уровня допуска (1-3)."""
         return 1 <= level <= 3
 
     @classmethod
     def from_data(cls, data: dict) -> "Equipment":
-        """Создать объект оборудования из словаря данных JSON."""
         return cls(
             equipment_id=int(data.get("id", data.get("equipment_id", 0))),
             name=str(data.get("name", "")),
@@ -72,7 +63,6 @@ class Equipment:
         )
 
     def to_dict(self) -> dict:
-        """Преобразовать объект в словарь для сохранения в JSON."""
         res = {
             "id": self.id,
             "name": self.name,
@@ -87,7 +77,6 @@ class Equipment:
         return res
 
     def __str__(self) -> str:
-        """Вернуть строковое представление оборудования."""
         inv = (
             f", инв. {self.inventory_number}"
             if self.inventory_number
@@ -106,7 +95,6 @@ Room = Equipment
 def _get_equipment_list(
     collection: list[Equipment] | dict,
 ) -> list[Equipment]:
-    """Вспомогательная функция извлечения списка объектов."""
     if isinstance(collection, dict):
         return list(collection.values())
     return list(collection)
@@ -122,7 +110,6 @@ def add_equipment(
     hourly_rate: float = 0.0,
     capacity: int = 1,
 ) -> Equipment:
-    """Создать объект Equipment и добавить его в коллекцию."""
     items = _get_equipment_list(equipment)
     eq_id = max((item.id for item in items), default=0) + 1
     new_item = Equipment(
@@ -146,7 +133,6 @@ def find_equipment(
     equipment: list[Equipment] | dict,
     query: str,
 ) -> list[Equipment]:
-    """Найти приборы по подстроке названия или инвентарному номеру."""
     query_lower = query.lower()
     found: list[Equipment] = []
     for item in _get_equipment_list(equipment):
@@ -161,7 +147,6 @@ def filter_equipment_by_level(
     equipment: list[Equipment] | dict,
     max_level: int,
 ) -> Iterator[Equipment]:
-    """Отобрать оборудование по допустимому уровню допуска через генератор."""
     for item in _get_equipment_list(equipment):
         if item.required_level <= max_level:
             yield item
@@ -171,7 +156,6 @@ def sort_equipment(
     equipment: list[Equipment] | dict,
     reverse: bool = False,
 ) -> list[Equipment]:
-    """Отсортировать оборудование по почасовой ставке."""
     return sorted(
         _get_equipment_list(equipment),
         key=lambda item: item.hourly_rate,
@@ -183,7 +167,6 @@ def get_equipment_by_id(
     equipment: list[Equipment] | dict,
     equipment_id: Optional[int],
 ) -> Optional[Equipment]:
-    """Вернуть объект оборудования по идентификатору."""
     if equipment_id is None:
         return None
     for item in _get_equipment_list(equipment):
@@ -193,7 +176,6 @@ def get_equipment_by_id(
 
 
 def show_equipment(equipment: list[Equipment] | dict) -> None:
-    """Вывести список оборудования в виде таблицы."""
     items = sort_equipment(equipment)
     if not items:
         print("Список оборудования пуст.")
@@ -219,7 +201,6 @@ def check_equipment_availability(
     operational: bool,
     under_maintenance: bool,
 ) -> str:
-    """Проверить техническую готовность оборудования."""
     if not operational:
         return "Оборудование неисправно"
     if under_maintenance:

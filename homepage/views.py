@@ -2,7 +2,6 @@ from django.http import HttpResponse
 
 
 def page(title: str, content: str) -> str:
-    """Сформировать единый HTML-каркас страницы с подключением Bootstrap."""
     bootstrap = (
         "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3"
         "/dist/css/bootstrap.min.css"
@@ -30,7 +29,6 @@ def page(title: str, content: str) -> str:
 
 
 def index(request) -> HttpResponse:
-    """Главная страница проекта."""
     content = """
 <h1 class="display-4">Лабораторное оборудование</h1>
 <p class="lead">Система бронирования лабораторного оборудования.</p>

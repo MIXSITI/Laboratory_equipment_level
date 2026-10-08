@@ -2,7 +2,6 @@ from typing import Optional
 
 
 class User:
-    """Базовый класс пользователя лаборатории."""
 
     def __init__(
         self,
@@ -13,7 +12,6 @@ class User:
         briefing_passed: bool = False,
         email: str = "",
     ) -> None:
-        """Инициализировать объект пользователя."""
         self.id = user_id
         self.name = name
         self.role = role
@@ -22,27 +20,22 @@ class User:
         self.email = email
 
     def has_access(self, required_level: int) -> bool:
-        """Проверить допуск пользователя к прибору с учетом инструктажа."""
         if not self.briefing_passed:
             return False
         return self.access_level >= required_level
 
     def is_student(self) -> bool:
-        """Проверить, является ли пользователь студентом."""
         return self.role.strip().lower() == "студент"
 
     def get_discount(self) -> float:
-        """Вернуть базовый размер скидки на аренду оборудования."""
         return 0.5 if self.is_student() else 0.0
 
     @staticmethod
     def validate_level(level: int) -> bool:
-        """Проверить корректность значения уровня допуска."""
         return 1 <= level <= 3
 
     @classmethod
     def from_data(cls, data: dict) -> "User":
-        """Создать объект пользователя из словаря данных JSON."""
         user_id = int(data.get("id", data.get("user_id", 0)))
         name = str(data.get("name", ""))
         role = str(data.get("role", "студент")).strip().lower()
@@ -75,7 +68,6 @@ class User:
         )
 
     def to_dict(self) -> dict:
-        """Преобразовать объект пользователя в словарь для сериализации."""
         res = {
             "id": self.id,
             "name": self.name,
@@ -88,7 +80,6 @@ class User:
         return res
 
     def __str__(self) -> str:
-        """Строковое представление объекта пользователя."""
         briefing = "да" if self.briefing_passed else "нет"
         return (
             f"[{self.id}] {self.name} ({self.role}, "
@@ -97,7 +88,6 @@ class User:
 
 
 class Student(User):
-    """Студент лаборатории (наследует User, скидка 50%)."""
 
     def __init__(
         self,
@@ -107,7 +97,6 @@ class Student(User):
         briefing_passed: bool = False,
         email: str = "",
     ) -> None:
-        """Инициализировать профиль студента."""
         super().__init__(
             user_id=user_id,
             name=name,
@@ -118,12 +107,10 @@ class Student(User):
         )
 
     def get_discount(self) -> float:
-        """Студент имеет льготную скидку 50% на бронирование."""
         return 0.5
 
 
 class Staff(User):
-    """Сотрудник лаборатории (наследует User, без скидки)."""
 
     def __init__(
         self,
@@ -133,7 +120,6 @@ class Staff(User):
         briefing_passed: bool = False,
         email: str = "",
     ) -> None:
-        """Инициализировать профиль сотрудника."""
         super().__init__(
             user_id=user_id,
             name=name,
@@ -144,12 +130,10 @@ class Staff(User):
         )
 
     def get_discount(self) -> float:
-        """Сотрудник оплачивает полную почасовую ставку."""
         return 0.0
 
 
 def _get_users(collection: list[User] | dict) -> list[User]:
-    """Вспомогательная функция извлечения списка пользователей."""
     if isinstance(collection, dict):
         return list(collection.values())
     return list(collection)
@@ -163,7 +147,6 @@ def add_user(
     briefing_passed: bool = False,
     email: str = "",
 ) -> User:
-    """Создать объект User/Student/Staff и добавить в коллекцию."""
     items = _get_users(users)
     user_id = max((u.id for u in items), default=0) + 1
     role_norm = role.strip().lower()
@@ -201,7 +184,6 @@ def add_user(
 
 
 def find_user(users: list[User] | dict, query: str) -> list[User]:
-    """Найти пользователей по подстроке ФИО или email."""
     query_lower = query.lower()
     found: list[User] = []
     for item in _get_users(users):
@@ -217,7 +199,6 @@ def check_user_access(
     min_level: int,
     briefing_passed: bool,
 ) -> bool:
-    """Проверить соответствие прав пользователя."""
     if not briefing_passed:
         return False
     return user_level >= min_level
@@ -227,7 +208,6 @@ def get_user_by_id(
     users: list[User] | dict,
     user_id: Optional[int],
 ) -> Optional[User]:
-    """Вернуть объект пользователя по идентификатору."""
     if user_id is None:
         return None
     for item in _get_users(users):
@@ -237,7 +217,6 @@ def get_user_by_id(
 
 
 def show_users(users: list[User] | dict) -> None:
-    """Вывести список пользователей в виде таблицы."""
     items = _get_users(users)
     if not items:
         print("Список пользователей пуст.")

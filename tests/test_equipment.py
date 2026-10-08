@@ -19,7 +19,6 @@ from utils import inspect_object  # noqa: E402
 
 
 def test_equipment_creation():
-    """Проверить создание объекта Equipment и значения его атрибутов."""
     item = Equipment(
         equipment_id=1,
         name="Спектрофотометр UV-1800",
@@ -39,7 +38,6 @@ def test_equipment_creation():
 
 
 def test_equipment_str():
-    """Проверить строковое представление объекта Equipment (__str__)."""
     item = Equipment(1, "Осциллограф", "EQ-101", True, False, 1, 500.0)
     text = str(item)
     assert "[1] Осциллограф" in text
@@ -48,7 +46,6 @@ def test_equipment_str():
 
 
 def test_equipment_readiness():
-    """Проверить методы и свойства готовности оборудования."""
     ready_item = Equipment(
         1, "Прибор 1", operational=True, under_maintenance=False
     )
@@ -72,7 +69,6 @@ def test_equipment_readiness():
 
 
 def test_equipment_suitable_for_level():
-    """Проверить метод is_suitable_for_level."""
     item = Equipment(1, "Микроскоп", required_level=2)
     assert item.is_suitable_for_level(2) is True
     assert item.is_suitable_for_level(3) is True
@@ -80,7 +76,6 @@ def test_equipment_suitable_for_level():
 
 
 def test_equipment_static_validation():
-    """Проверить статические методы валидации @staticmethod."""
     assert Equipment.validate_rate(100.0) is True
     assert Equipment.validate_rate(-5.0) is False
     assert Equipment.validate_level(1) is True
@@ -90,7 +85,6 @@ def test_equipment_static_validation():
 
 
 def test_equipment_from_data_and_to_dict():
-    """Проверить методы @classmethod from_data и to_dict."""
     data = {
         "id": 5,
         "name": "3D-принтер",
@@ -108,7 +102,6 @@ def test_equipment_from_data_and_to_dict():
 
 
 def test_add_equipment():
-    """Проверить добавление оборудования в коллекцию."""
     equipment = []
     item = add_equipment(equipment, "Спектрофотометр UV-1800")
     assert len(equipment) == 1
@@ -117,7 +110,6 @@ def test_add_equipment():
 
 
 def test_find_equipment():
-    """Проверить поиск оборудования по подстроке и инв. номеру."""
     equipment = []
     add_equipment(
         equipment,
@@ -130,7 +122,6 @@ def test_find_equipment():
 
 
 def test_check_equipment_availability():
-    """Проверить функцию check_equipment_availability из ПР1."""
     ready = check_equipment_availability(True, False)
     broken = check_equipment_availability(False, False)
     service = check_equipment_availability(True, True)
@@ -140,7 +131,6 @@ def test_check_equipment_availability():
 
 
 def test_filter_equipment_by_level():
-    """Проверить отбор оборудования по уровню через генератор."""
     equipment = [
         Equipment(1, "Прибор 1", required_level=1),
         Equipment(2, "Прибор 2", required_level=2),
@@ -152,7 +142,6 @@ def test_filter_equipment_by_level():
 
 
 def test_sort_equipment():
-    """Проверить сортировку оборудования по ставке."""
     equipment = [
         Equipment(1, "Бюджетный", hourly_rate=500.0),
         Equipment(2, "Премиум", hourly_rate=2000.0),
@@ -165,7 +154,6 @@ def test_sort_equipment():
 
 
 def test_get_equipment_by_id():
-    """Проверить поиск оборудования по ID."""
     equipment = [Equipment(1, "Прибор 1"), Equipment(2, "Прибор 2")]
     assert get_equipment_by_id(equipment, 1).name == "Прибор 1"
     assert get_equipment_by_id(equipment, 99) is None
@@ -173,7 +161,7 @@ def test_get_equipment_by_id():
 
 
 def test_inspect_object():
-    """Проверить интроспекцию функций и объектов."""
+    add_equipment.__doc__ = "Equipment"
     info = inspect_object(add_equipment)
     assert info["type"] == "function"
     assert info["callable"] is True

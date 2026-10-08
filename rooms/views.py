@@ -9,7 +9,6 @@ from storage import load_bookings, load_rooms, load_users
 
 
 def rooms(request) -> HttpResponse:
-    """Отобразить список помещений / приборов."""
     rooms_list = load_rooms("data/equipment.json")
     items = ""
     for room in rooms_list:
@@ -28,7 +27,6 @@ def rooms(request) -> HttpResponse:
 
 
 def room_detail(request, room_id: int) -> HttpResponse:
-    """Отобразить информацию об отдельном объекте."""
     rooms_list = load_rooms("data/equipment.json")
     room = find_room_by_id(rooms_list, room_id)
     if room is None:

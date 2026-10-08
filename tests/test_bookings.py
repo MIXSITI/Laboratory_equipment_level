@@ -29,7 +29,6 @@ from storage import (  # noqa: E402
 
 
 def test_booking_creation_and_period():
-    """Проверить создание объекта Booking, связей и сущности Period."""
     equipment = Equipment(1, "Спектрофотометр", hourly_rate=1200.0)
     user = Student(1, "Иванов Алексей")
     booking = Booking(
@@ -52,7 +51,6 @@ def test_booking_creation_and_period():
 
 
 def test_period_entity():
-    """Проверить сущность Period (период бронирования)."""
     p = Period("2026-10-01", 2.5)
     assert p.date == date(2026, 10, 1)
     assert p.duration_hours == 2.5
@@ -60,7 +58,6 @@ def test_period_entity():
 
 
 def test_booking_str():
-    """Проверить строковое представление объекта Booking (__str__)."""
     equipment = Equipment(1, "Микроскоп")
     user = User(1, "Петров")
     booking = Booking(1, equipment, date(2026, 10, 1), user, 2.0, 1000.0)
@@ -72,7 +69,6 @@ def test_booking_str():
 
 
 def test_booking_status_property():
-    """Проверить свойство status объекта Booking (@property)."""
     equipment = Equipment(1, "Прибор")
     user = User(1, "Пользователь")
     booking = Booking(1, equipment, date(2026, 9, 15), user)
@@ -84,7 +80,6 @@ def test_booking_status_property():
 
 
 def test_booking_cancel():
-    """Проверить, что отмена не удаляет бронирование, а меняет его статус."""
     equipment = Equipment(1, "Прибор")
     user = User(1, "Пользователь")
     bookings = []
@@ -97,7 +92,6 @@ def test_booking_cancel():
 
 
 def test_is_equipment_available():
-    """Проверить функцию проверки доступности оборудования."""
     bookings = []
     equipment = Equipment(1, "Прибор")
     booking_date = date(2026, 9, 15)
@@ -105,7 +99,6 @@ def test_is_equipment_available():
 
 
 def test_duplicate_booking_forbidden():
-    """Проверить запрет повторного активного бронирования на одну дату."""
     bookings = []
     equipment = Equipment(1, "Прибор")
     user1 = User(1, "Пользователь 1")
@@ -119,7 +112,6 @@ def test_duplicate_booking_forbidden():
 
 
 def test_cancelled_booking_frees_date():
-    """Проверить правило: отмененное бронирование освобождает дату."""
     bookings = []
     equipment = Equipment(1, "Прибор")
     user1 = User(1, "Пользователь 1")
@@ -141,7 +133,6 @@ def test_cancelled_booking_frees_date():
 
 
 def test_calculate_booking_cost():
-    """Проверить расчет стоимости с учетом студенческой скидки 50%."""
     student_cost = calculate_booking_cost(1200.0, 3.0, True)
     staff_cost = calculate_booking_cost(1200.0, 3.0, False)
     assert student_cost == 1800.0
@@ -149,7 +140,6 @@ def test_calculate_booking_cost():
 
 
 def test_get_booking_statistics():
-    """Проверить статистику по активным и общим бронированиям."""
     e1 = Equipment(1, "Прибор 1")
     e2 = Equipment(2, "Прибор 2")
     u = User(1, "Пользователь")
@@ -167,7 +157,6 @@ def test_get_booking_statistics():
 
 
 def test_storage_equipment_users_bookings(tmp_path: Path):
-    """Проверить сквозное сохранение и загрузку объектов через JSON."""
     eq_file = tmp_path / "equipment.json"
     users_file = tmp_path / "users.json"
     book_file = tmp_path / "bookings.json"

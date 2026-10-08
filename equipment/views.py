@@ -9,7 +9,6 @@ from storage import load_bookings, load_equipment, load_users
 
 
 def equipment_list(request) -> HttpResponse:
-    """Отобразить список лабораторного оборудования."""
     equipment_items = load_equipment("data/equipment.json")
     items = ""
     for item in equipment_items:
@@ -36,7 +35,6 @@ def equipment_list(request) -> HttpResponse:
 
 
 def equipment_detail(request, equipment_id: int) -> HttpResponse:
-    """Отобразить детальную информацию о лабораторном оборудовании."""
     equipment_items = load_equipment("data/equipment.json")
     item = find_equipment_by_id(equipment_items, equipment_id)
     if item is None:
