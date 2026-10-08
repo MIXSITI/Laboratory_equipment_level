@@ -1,5 +1,3 @@
-"""Пакет models объектной модели предметной области."""
-
 from .bookings import Booking, Period, find_booking_by_id
 from .equipment import (
     Equipment,

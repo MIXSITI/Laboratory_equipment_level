@@ -1,5 +1,3 @@
-"""Представления приложения для работы с лабораторным оборудованием."""
-
 from datetime import date
 
 from django.http import HttpResponse
@@ -112,5 +110,4 @@ def equipment_detail(request, equipment_id: int) -> HttpResponse:
     )
 
 
-# Псевдонимы
 equipment = equipment_list

@@ -1,5 +1,3 @@
-"""Маршруты приложения homepage."""
-
 from django.urls import path
 
 from . import views

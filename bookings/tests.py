@@ -1,5 +1,3 @@
-"""Тесты приложения bookings."""
-
 from django.test import TestCase
 
 

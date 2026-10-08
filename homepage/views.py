@@ -1,5 +1,3 @@
-"""Представления приложения главной страницы."""
-
 from django.http import HttpResponse
 
 

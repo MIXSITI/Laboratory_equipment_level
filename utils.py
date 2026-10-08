@@ -1,5 +1,3 @@
-"""Вспомогательные функции ввода данных, интроспекции и декораторы."""
-
 import functools
 from datetime import date, datetime
 from typing import Any, Callable

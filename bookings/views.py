@@ -1,5 +1,3 @@
-"""Представления приложения для работы с бронированиями оборудования."""
-
 from django.http import HttpResponse
 
 from homepage.views import page

@@ -1,5 +1,3 @@
-"""Функции сохранения и загрузки объектов проекта в формате JSON."""
-
 import json
 from datetime import date, datetime
 from pathlib import Path
@@ -167,6 +165,5 @@ def save_bookings(
     save_json_list(filename, prepared)
 
 
-# Псевдонимы функций для совместимости
 load_rooms = load_equipment
 save_rooms = save_equipment

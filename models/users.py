@@ -1,5 +1,3 @@
-"""Классы пользователей и функции работы с правами доступа."""
-
 from typing import Optional
 
 
@@ -219,7 +217,7 @@ def check_user_access(
     min_level: int,
     briefing_passed: bool,
 ) -> bool:
-    """Проверить соответствие прав пользователя (сохранена из ПР1)."""
+    """Проверить соответствие прав пользователя."""
     if not briefing_passed:
         return False
     return user_level >= min_level

@@ -1,10 +1,7 @@
-"""Тесты для класса Booking, Period и функций управления бронированием."""
-
 import sys
 from datetime import date
 from pathlib import Path
 
-# Поддержка прямого запуска файла: python tests/test_bookings.py
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
@@ -47,7 +44,6 @@ def test_booking_creation_and_period():
     assert booking.equipment is equipment
     assert booking.user is user
 
-    # Проверка инкапсуляции сущности Период
     assert isinstance(booking.period, Period)
     assert booking.booking_date == date(2026, 9, 15)
     assert booking.duration_hours == 3.0

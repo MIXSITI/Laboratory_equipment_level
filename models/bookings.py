@@ -1,5 +1,3 @@
-"""Класс Booking, Period и функции для создания и проверки бронирований."""
-
 from datetime import date
 from typing import Optional
 
@@ -8,12 +6,7 @@ from .users import User
 
 
 class Period:
-    """Сущность периода бронирования: дата и длительность в часах.
-
-    Логически представляет интервал времени резервирования прибора.
-    Отдельно в самостоятельную модель/файл не выносится,
-    а входит в состав сущности Бронирование (Booking).
-    """
+    """Сущность периода бронирования: дата и длительность в часах."""
 
     def __init__(
         self,
@@ -33,11 +26,7 @@ class Period:
 
 
 class Booking:
-    """Бронирование оборудования пользователем лаборатории.
-
-    Связывает сущности Оборудование (Equipment), Пользователь (User)
-    и инкапсулирует сущность Период (Period: дата и длительность сеанса).
-    """
+    """Бронирование оборудования пользователем лаборатории."""
 
     def __init__(
         self,
@@ -55,13 +44,11 @@ class Booking:
         self.user = user
         self.cost = cost
         self.is_cancelled = is_cancelled
-
-        # Инкапсуляция сущности Период
         self.period = Period(booking_date, duration_hours)
 
     @property
     def booking_date(self) -> date:
-        """Календарная дата бронирования из сущности Период."""
+        """Календарная дата бронирования."""
         return self.period.date
 
     @booking_date.setter
@@ -73,7 +60,7 @@ class Booking:
 
     @property
     def duration_hours(self) -> float:
-        """Длительность сеанса в часах из сущности Период."""
+        """Длительность сеанса в часах."""
         return self.period.duration_hours
 
     @duration_hours.setter
@@ -82,7 +69,7 @@ class Booking:
 
     @property
     def room(self) -> Equipment:
-        """Псевдоним прибора для совместимости с примерами методички."""
+        """Псевдоним прибора."""
         return self.equipment
 
     @property
@@ -164,7 +151,7 @@ def calculate_booking_cost(
     hours: float,
     student: bool,
 ) -> float:
-    """Рассчитать стоимость бронирования со скидкой (сохранена из ПР1)."""
+    """Рассчитать стоимость бронирования со скидкой."""
     base_cost = rate * hours
     if student:
         discount = 0.5
@@ -257,7 +244,7 @@ def cancel_booking(
 
 
 def get_booking_status(is_available: bool) -> str:
-    """Вернуть текстовый статус доступности оборудования (из ПР1)."""
+    """Вернуть текстовый статус доступности оборудования."""
     if is_available:
         return "Оборудование доступно для бронирования"
     return "Оборудование уже занято"

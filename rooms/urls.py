@@ -1,5 +1,3 @@
-"""Маршруты приложения rooms."""
-
 from django.urls import path
 
 from . import views

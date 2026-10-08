@@ -1,5 +1,3 @@
-"""Класс Equipment и функции для работы с лабораторным оборудованием."""
-
 from collections.abc import Iterator
 from typing import Optional
 
@@ -34,7 +32,7 @@ class Equipment:
         return self.operational and not self.under_maintenance
 
     def check_readiness(self) -> str:
-        """Проверить готовность прибора к эксплуатации (из ПР1)."""
+        """Проверить готовность прибора к эксплуатации."""
         if not self.operational:
             return "Оборудование неисправно"
         if self.under_maintenance:
@@ -102,7 +100,6 @@ class Equipment:
         )
 
 
-# Псевдоним Room для совместимости с примерами методички
 Room = Equipment
 
 
@@ -222,7 +219,7 @@ def check_equipment_availability(
     operational: bool,
     under_maintenance: bool,
 ) -> str:
-    """Проверить техническую готовность оборудования (из ПР1)."""
+    """Проверить техническую готовность оборудования."""
     if not operational:
         return "Оборудование неисправно"
     if under_maintenance:
@@ -230,7 +227,6 @@ def check_equipment_availability(
     return "Оборудование готово к работе"
 
 
-# Псевдонимы функций для совместимости
 add_room = add_equipment
 find_room = find_equipment
 sort_rooms = sort_equipment

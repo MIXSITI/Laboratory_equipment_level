@@ -1,5 +1,3 @@
-"""Тесты веб-интерфейса Django для pytest."""
-
 import os
 import django
 

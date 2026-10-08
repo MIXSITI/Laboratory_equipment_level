@@ -1,5 +1,3 @@
-"""Представления приложения rooms (совместимость с методичкой)."""
-
 from datetime import date
 
 from django.http import HttpResponse

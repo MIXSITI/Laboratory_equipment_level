@@ -1,7 +1,6 @@
 import sys
 from pathlib import Path
 
-# Поддержка прямого запуска файла: python tests/test_users.py
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
@@ -72,7 +71,6 @@ def test_student_and_staff_inheritance_and_polymorphism():
     assert student.role == "студент"
     assert staff.role == "сотрудник"
 
-    # Полиморфный вызов get_discount()
     assert student.get_discount() == 0.5
     assert staff.get_discount() == 0.0
 
