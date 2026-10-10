@@ -5,8 +5,8 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-import pytest  # noqa: E402
-from models.equipment import (  # noqa: E402
+import pytest
+from models.equipment import (
     Equipment,
     add_equipment,
     check_equipment_availability,
@@ -15,7 +15,7 @@ from models.equipment import (  # noqa: E402
     get_equipment_by_id,
     sort_equipment,
 )
-from utils import inspect_object  # noqa: E402
+from utils import inspect_object
 
 
 def test_equipment_creation():

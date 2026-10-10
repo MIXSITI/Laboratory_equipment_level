@@ -4,7 +4,7 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "roomly.settings")
 django.setup()
 
-from django.test import Client  # noqa: E402
+from django.test import Client
 
 
 def test_homepage_view():

@@ -6,8 +6,8 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-import pytest  # noqa: E402
-from models.bookings import (  # noqa: E402
+import pytest
+from models.bookings import (
     Booking,
     Period,
     calculate_booking_cost,
@@ -16,9 +16,9 @@ from models.bookings import (  # noqa: E402
     get_booking_statistics,
     is_equipment_available,
 )
-from models.equipment import Equipment  # noqa: E402
-from models.users import Student, User  # noqa: E402
-from storage import (  # noqa: E402
+from models.equipment import Equipment
+from models.users import Student, User
+from storage import (
     load_bookings,
     load_equipment,
     load_users,
