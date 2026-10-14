@@ -4,7 +4,7 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "roomly.settings")
 django.setup()
 
-from django.test import Client
+from django.test import Client, override_settings
 
 
 def test_homepage_view():
@@ -12,6 +12,16 @@ def test_homepage_view():
     response = client.get("/")
     assert response.status_code == 200
     assert "Лабораторное оборудование" in response.content.decode("utf-8")
+
+
+@override_settings(DEBUG=False)
+def test_unknown_url_uses_page_not_found():
+    client = Client()
+    response = client.get("/nonexistent/")
+    body = response.content.decode("utf-8")
+    assert response.status_code == 404
+    assert "404 – страница не найдена" in body
+    assert "На главную" in body
 
 
 def test_equipment_list_view():
