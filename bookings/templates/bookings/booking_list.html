@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}
+Бронирования – Roomly
+{% endblock %}
+
+{% block content %}
+<h1>Бронирования оборудования</h1>
+<p>
+    Всего бронирований: {{ bookings|length }}
+</p>
+<ul class="list-group mb-4">
+{% for booking in bookings %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <a href="{% url 'bookings:detail' booking.id %}">
+            {{ booking.room.name }} – {{ booking.booking_date }}
+        </a>
+        {% include "bookings/includes/booking_status.html" %}
+    </li>
+{% empty %}
+    <li class="list-group-item">
+        Бронирования не найдены.
+    </li>
+{% endfor %}
+</ul>
+<a href="{% url 'homepage:index' %}" class="btn btn-outline-secondary">← На главную</a>
+{% endblock %}

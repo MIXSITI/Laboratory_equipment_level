@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}
+Главная – Roomly
+{% endblock %}
+
+{% block content %}
+<h1 class="display-4">Roomly</h1>
+<p class="lead">
+    Система бронирования помещений. Лабораторное оборудование.
+</p>
+<p>Основные разделы:</p>
+<div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'rooms:list' %}" class="btn btn-primary">Помещения</a>
+    <a href="{% url 'equipment:equipment_list' %}" class="btn btn-info text-white">Оборудование</a>
+    <a href="{% url 'bookings:bookings' %}" class="btn btn-secondary">Бронирования</a>
+</div>
+{% endblock %}

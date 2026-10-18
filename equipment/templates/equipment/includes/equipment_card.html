@@ -1,0 +1,27 @@
+<article class="card room-card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+            <h2 class="card-title h4">
+                {{ item.name|default:"Без названия" }}
+                {% if item.inventory_number %}
+                    <small class="text-muted">({{ item.inventory_number }})</small>
+                {% endif %}
+            </h2>
+            {% if item.is_ready %}
+                <span class="badge bg-success">готов</span>
+            {% else %}
+                <span class="badge bg-warning text-dark">ТО / ремонт</span>
+            {% endif %}
+        </div>
+        <p class="card-text mb-1">
+            <strong>Ставка:</strong> {{ item.hourly_rate }} руб/час |
+            <strong>Допуск:</strong> ур. {{ item.required_level }}
+        </p>
+        <a
+            href="{% url 'equipment:equipment_detail' item.id %}"
+            class="btn btn-primary btn-sm mt-2"
+        >
+            Подробнее
+        </a>
+    </div>
+</article>

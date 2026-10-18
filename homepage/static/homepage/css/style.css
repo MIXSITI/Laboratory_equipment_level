@@ -1,0 +1,28 @@
+body {
+    min-height: 100vh;
+}
+
+.room-card {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.booking-status {
+    font-weight: 600;
+}
+
+.booking-status-active {
+    letter-spacing: 0.5px;
+}
+
+.booking-status-cancelled {
+    letter-spacing: 0.5px;
+}
+
+.roomly-logo {
+    width: 120px;
+    height: auto;
+    margin: 1rem 0;
+}

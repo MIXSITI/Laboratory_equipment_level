@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}
+Помещения – Roomly
+{% endblock %}
+
+{% block content %}
+<h1>Помещения</h1>
+<p>
+    Всего помещений: {{ rooms|length }}
+</p>
+<ul class="list-unstyled">
+{% for room in rooms %}
+    {% include "rooms/includes/room_card.html" %}
+{% empty %}
+    <p>Помещения не найдены.</p>
+{% endfor %}
+</ul>
+<a href="{% url 'homepage:index' %}" class="btn btn-outline-secondary mt-2">← На главную</a>
+{% endblock %}

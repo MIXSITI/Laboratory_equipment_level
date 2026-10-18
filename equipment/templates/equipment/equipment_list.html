@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}
+Лабораторное оборудование – Roomly
+{% endblock %}
+
+{% block content %}
+<h1>Лабораторное оборудование</h1>
+<p>
+    Всего единиц оборудования: {{ equipment_items|length }}
+</p>
+<ul class="list-unstyled">
+{% for item in equipment_items %}
+    {% include "equipment/includes/equipment_card.html" %}
+{% empty %}
+    <p>Оборудование не найдено.</p>
+{% endfor %}
+</ul>
+<a href="{% url 'homepage:index' %}" class="btn btn-outline-secondary mt-2">← На главную</a>
+{% endblock %}

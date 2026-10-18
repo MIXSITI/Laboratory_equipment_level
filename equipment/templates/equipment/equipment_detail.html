@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if item %}
+{{ item.name }} – Roomly
+{% else %}
+Оборудование не найдено – Roomly
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if item %}
+<div class="card room-card">
+    <div class="card-body">
+        <h1 class="card-title h3">
+            {{ item.name }}
+        </h1>
+        <p class="card-text">
+            <strong>ID:</strong> {{ item.id }}
+        </p>
+        <p class="card-text">
+            <strong>Инвентарный номер:</strong> {{ item.inventory_number|default:"—" }}
+        </p>
+        <p class="card-text">
+            <strong>Почасовая ставка:</strong> {{ item.hourly_rate }} руб/час
+        </p>
+        <p class="card-text">
+            <strong>Требуемый уровень допуска:</strong> Уровень {{ item.required_level }}
+        </p>
+        <p class="card-text">
+            <strong>Техническое состояние:</strong>
+            {% if item.is_ready %}
+                <span class="badge bg-success">{{ readiness }}</span>
+            {% else %}
+                <span class="badge bg-warning text-dark">{{ readiness }}</span>
+            {% endif %}
+        </p>
+        <p class="card-text">
+            Доступность на текущую дату:
+            {% if available %}
+                <span class="badge bg-success">доступно</span>
+            {% else %}
+                <span class="badge bg-danger">занято</span>
+            {% endif %}
+        </p>
+    </div>
+</div>
+{% else %}
+<h1 class="text-danger">
+    Оборудование не найдено
+</h1>
+<p class="lead">
+    Прибор с указанным ID не зарегистрирован в системе.
+</p>
+{% endif %}
+<a
+    href="{% url 'equipment:equipment_list' %}"
+    class="btn btn-outline-secondary mt-3"
+>
+    ← к списку оборудования
+</a>
+{% endblock %}

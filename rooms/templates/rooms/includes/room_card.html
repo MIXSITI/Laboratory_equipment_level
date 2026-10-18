@@ -1,0 +1,16 @@
+<article class="card room-card mb-3">
+    <div class="card-body">
+        <h2 class="card-title">
+            {{ room.name|default:"Без названия" }}
+        </h2>
+        <p class="card-text">
+            Вместимость: {{ room.capacity }} мест
+        </p>
+        <a
+            href="{% url 'rooms:detail' room.id %}"
+            class="btn btn-primary"
+        >
+            Подробнее
+        </a>
+    </div>
+</article>
