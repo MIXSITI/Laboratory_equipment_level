@@ -60,7 +60,6 @@ def test_available_rooms_view():
     assert response.status_code == 200
     assert "Свободные помещения" in response.content.decode("utf-8")
 
-    # Search on a specific date where room 2 is booked
     response_search = client.get("/rooms/available/?date=2026-09-20")
     assert response_search.status_code == 200
     body = response_search.content.decode("utf-8")

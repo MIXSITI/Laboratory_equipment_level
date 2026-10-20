@@ -1,7 +1,3 @@
--- ==========================================
--- Roomly: структура базы данных (ПР7)
--- ==========================================
-
 CREATE TABLE IF NOT EXISTS rooms (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,

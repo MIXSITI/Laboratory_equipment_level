@@ -6,7 +6,6 @@ from db.database import DB_PATH
 
 
 class BookingRecord:
-    """Wrapper for sqlite3.Row supporting dict and attribute access."""
 
     def __init__(self, row: sqlite3.Row) -> None:
         self._row = row
