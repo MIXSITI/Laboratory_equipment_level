@@ -17,7 +17,7 @@
         </h1>
         <p class="card-text">
             <strong>Помещение / Оборудование:</strong>
-            {{ booking.room.name }}
+            {{ booking.room_name|default:booking.room.name }}
         </p>
         <p class="card-text">
             <strong>Дата:</strong>
@@ -29,7 +29,7 @@
         </p>
         <p class="card-text">
             <strong>Пользователь:</strong>
-            {{ booking.user.name }}
+            {{ booking.user_name|default:booking.user.name }}
         </p>
         <p class="card-text">
             <strong>Стоимость:</strong>

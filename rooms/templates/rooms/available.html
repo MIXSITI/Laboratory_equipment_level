@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}
+Свободные помещения – Roomly
+{% endblock %}
+
+{% block content %}
+<h1>Свободные помещения</h1>
+<p class="lead">
+    Поиск помещений и оборудования, свободных на выбранную дату (SQL-запрос с подзапросом <code>NOT IN</code>).
+</p>
+
+<form method="get" class="row g-3 mb-4">
+    <div class="col-auto">
+        <label for="date" class="col-form-label fw-bold">Дата:</label>
+    </div>
+    <div class="col-auto">
+        <input
+            type="date"
+            id="date"
+            name="date"
+            value="{{ booking_date|default:'' }}"
+            class="form-control"
+            required
+        >
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Найти</button>
+    </div>
+</form>
+
+{% if booking_date %}
+    <h2>Дата: {{ booking_date }}</h2>
+    <div class="list-group mb-3">
+    {% for room in rooms %}
+        <article class="card room-card mb-3">
+            <div class="card-body">
+                <h3 class="card-title h4">{{ room.name }}</h3>
+                <p class="card-text mb-1">
+                    Вместимость: {{ room.capacity }} человек
+                </p>
+                {% if room.hourly_rate %}
+                    <p class="card-text text-muted mb-2">
+                        Ставка: {{ room.hourly_rate }} руб/час
+                    </p>
+                {% endif %}
+                <a href="{% url 'rooms:detail' room.id %}" class="btn btn-sm btn-primary">
+                    Подробнее
+                </a>
+            </div>
+        </article>
+    {% empty %}
+        <div class="alert alert-warning">
+            На выбранную дату свободных помещений нет.
+        </div>
+    {% endfor %}
+    </div>
+{% endif %}
+
+<div class="mt-3">
+    <a href="{% url 'rooms:list' %}" class="btn btn-outline-secondary">← к списку помещений</a>
+</div>
+{% endblock %}

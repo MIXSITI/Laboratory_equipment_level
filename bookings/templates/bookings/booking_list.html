@@ -13,7 +13,7 @@
 {% for booking in bookings %}
     <li class="list-group-item d-flex justify-content-between align-items-center">
         <a href="{% url 'bookings:detail' booking.id %}">
-            Бронирование №{{ booking.id }}: {{ booking.room.name }} – {{ booking.booking_date }} ({{ booking.user.name }})
+            Бронирование №{{ booking.id }}: {{ booking.room_name|default:booking.room.name }} – {{ booking.booking_date }} ({{ booking.user_name|default:booking.user.name }})
         </a>
         {% include "bookings/includes/booking_status.html" %}
     </li>

@@ -54,6 +54,20 @@ def test_rooms_views_compat():
     assert response_404.status_code == 404
 
 
+def test_available_rooms_view():
+    client = Client()
+    response = client.get("/rooms/available/")
+    assert response.status_code == 200
+    assert "Свободные помещения" in response.content.decode("utf-8")
+
+    # Search on a specific date where room 2 is booked
+    response_search = client.get("/rooms/available/?date=2026-09-20")
+    assert response_search.status_code == 200
+    body = response_search.content.decode("utf-8")
+    assert "Дата: 2026-09-20" in body
+    assert "Спектрофотометр UV-1800" in body
+
+
 def test_bookings_views():
     client = Client()
     response = client.get("/bookings/")
@@ -67,3 +81,13 @@ def test_bookings_views():
     response_404 = client.get("/bookings/999/")
     assert response_404.status_code == 404
     assert "Бронирование не найдено" in response_404.content.decode("utf-8")
+
+
+def test_statistics_view():
+    client = Client()
+    response = client.get("/bookings/statistics/")
+    assert response.status_code == 200
+    body = response.content.decode("utf-8")
+    assert "Статистика бронирований" in body
+    assert "Количество бронирований по помещениям" in body
+    assert "Активных бронирований" in body

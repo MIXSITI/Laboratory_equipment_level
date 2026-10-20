@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}
+Статистика бронирований – Roomly
+{% endblock %}
+
+{% block content %}
+<h1>Статистика бронирований</h1>
+<p class="lead">
+    Аналитические показатели, рассчитанные SQL-запросами с агрегатными функциями <code>COUNT</code>, <code>SUM</code>, <code>AVG</code> и группировкой <code>GROUP BY</code>.
+</p>
+
+{% if summary %}
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card p-3 text-center bg-light">
+            <h5 class="card-title text-muted">Активных бронирований</h5>
+            <p class="display-6 fw-bold mb-0">{{ summary.total_bookings }}</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 text-center bg-light">
+            <h5 class="card-title text-muted">Суммарная выручка</h5>
+            <p class="display-6 fw-bold mb-0">{{ summary.total_revenue|default:0 }} руб.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 text-center bg-light">
+            <h5 class="card-title text-muted">Средняя стоимость</h5>
+            <p class="display-6 fw-bold mb-0">{{ summary.avg_cost|floatformat:2|default:0 }} руб.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<h2>Количество бронирований по помещениям</h2>
+<div class="list-group mb-4">
+{% for item in statistics %}
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-1">{{ item.room_name }}</h5>
+            <small class="text-muted">ID: {{ item.room_id }}</small>
+        </div>
+        <span class="badge bg-primary rounded-pill fs-6">
+            {{ item.bookings_count }} бронир.
+        </span>
+    </div>
+{% empty %}
+    <p>Данные отсутствуют.</p>
+{% endfor %}
+</div>
+
+<a href="{% url 'bookings:bookings' %}" class="btn btn-outline-secondary">← к списку бронирований</a>
+{% endblock %}
