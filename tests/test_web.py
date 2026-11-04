@@ -66,6 +66,13 @@ def test_available_rooms_view():
     assert "Дата: 2026-09-20" in body
     assert "Спектрофотометр UV-1800" in body
 
+    response_invalid = client.get("/rooms/available/?date=invalid")
+    assert response_invalid.status_code == 200
+    assert (
+        "Укажите корректную дату"
+        in response_invalid.content.decode("utf-8")
+    )
+
 
 def test_bookings_views():
     client = Client()
@@ -90,3 +97,26 @@ def test_statistics_view():
     assert "Статистика бронирований" in body
     assert "Количество бронирований по помещениям" in body
     assert "Активных бронирований" in body
+
+
+def test_bookings_filter_and_sort_view():
+    client = Client()
+
+    res_sort = client.get("/bookings/?sort=room")
+    assert res_sort.status_code == 200
+
+    res_room = client.get("/bookings/?room=1")
+    assert res_room.status_code == 200
+
+    res_user = client.get("/bookings/?user=1")
+    assert res_user.status_code == 200
+
+    res_date = client.get("/bookings/?date=2026-07-15")
+    assert res_date.status_code == 200
+
+    res_err = client.get("/bookings/?date=wrong-date")
+    assert res_err.status_code == 200
+    assert "Укажите корректную дату" in res_err.content.decode("utf-8")
+
+    res_page = client.get("/bookings/?page=1")
+    assert res_page.status_code == 200
