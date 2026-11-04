@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'equipment',
     'rooms',
     'bookings',
+    'users',
 ]
 
 MIDDLEWARE = [

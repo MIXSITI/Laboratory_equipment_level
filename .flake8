@@ -1,3 +1,6 @@
 [flake8]
 per-file-ignores =
     tests/*.py: E402
+exclude =
+    venv,
+    */migrations/*
