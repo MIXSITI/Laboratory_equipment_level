@@ -7,7 +7,7 @@
 {% block content %}
 <h1>Свободные помещения</h1>
 <p class="lead">
-    Поиск помещений и оборудования, свободных на выбранную дату (SQL-запрос с подзапросом <code>NOT IN</code>).
+    Поиск помещений и оборудования, свободных на выбранную дату (Django ORM).
 </p>
 
 <form method="get" class="row g-3 mb-4">
@@ -29,7 +29,11 @@
     </div>
 </form>
 
-{% if booking_date %}
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+{% if booking_date and not error %}
     <h2>Дата: {{ booking_date }}</h2>
     <div class="list-group mb-3">
     {% for room in rooms %}

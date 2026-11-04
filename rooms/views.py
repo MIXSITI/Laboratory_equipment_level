@@ -1,23 +1,13 @@
-import sqlite3
+from datetime import datetime
+
 from django.shortcuts import render
 
-from db.database import DB_PATH
+from bookings.models import Booking
+from rooms.models import Room
 
 
 def rooms(request):
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
-    rooms_list = conn.execute("""
-        SELECT
-            id,
-            name,
-            capacity,
-            inventory_number,
-            hourly_rate
-        FROM rooms
-        ORDER BY name;
-    """).fetchall()
-    conn.close()
+    rooms_list = Room.objects.order_by("name")
     return render(
         request,
         "rooms/room_list.html",
@@ -26,19 +16,10 @@ def rooms(request):
 
 
 def room_detail(request, room_id: int):
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
-    room = conn.execute("""
-        SELECT
-            id,
-            name,
-            capacity,
-            inventory_number,
-            hourly_rate
-        FROM rooms
-        WHERE id = ?;
-    """, [room_id]).fetchone()
-    conn.close()
+    try:
+        room = Room.objects.get(pk=room_id)
+    except Room.DoesNotExist:
+        room = None
     return render(
         request,
         "rooms/room_detail.html",
@@ -48,32 +29,37 @@ def room_detail(request, room_id: int):
 
 
 def available_rooms(request):
-    booking_date = request.GET.get("date")
-    rooms_data = []
+    booking_date = request.GET.get("date", "").strip()
+    rooms_list = []
+    error = None
+
     if booking_date:
-        conn = sqlite3.connect(str(DB_PATH))
-        conn.row_factory = sqlite3.Row
-        rooms_data = conn.execute("""
-            SELECT
-                rooms.id,
-                rooms.name,
-                rooms.capacity,
-                rooms.hourly_rate
-            FROM rooms
-            WHERE rooms.id NOT IN (
-                SELECT bookings.room_id
-                FROM bookings
-                WHERE bookings.booking_date = ?
-                  AND bookings.is_cancelled = 0
+        try:
+            selected_date = datetime.strptime(
+                booking_date,
+                "%Y-%m-%d",
+            ).date()
+        except ValueError:
+            error = "Укажите корректную дату."
+        else:
+            booked_room_ids = Booking.objects.filter(
+                booking_date=selected_date,
+                is_cancelled=False,
+            ).values_list(
+                "room_id",
+                flat=True,
             )
-            ORDER BY rooms.name;
-        """, [booking_date]).fetchall()
-        conn.close()
+            rooms_list = Room.objects.exclude(
+                pk__in=booked_room_ids,
+            ).order_by("name")
+
+    context = {
+        "rooms": rooms_list,
+        "booking_date": booking_date,
+        "error": error,
+    }
     return render(
         request,
         "rooms/available.html",
-        {
-            "rooms": rooms_data,
-            "booking_date": booking_date,
-        },
+        context,
     )
