@@ -12,7 +12,18 @@
 
 <form method="get" class="mb-4">
     <div class="row g-3 align-items-end">
-        <div class="col-md-3">
+        <div class="col-md-4">
+            <label for="search" class="form-label">Поиск (прибор или пользователь)</label>
+            <input
+                type="text"
+                id="search"
+                name="search"
+                class="form-control"
+                placeholder="Например: Спектрофотометр или Иванов"
+                value="{{ search_query|default:'' }}"
+            >
+        </div>
+        <div class="col-md-4">
             <label for="date" class="form-label">Дата бронирования</label>
             <input
                 type="date"
@@ -22,8 +33,22 @@
                 value="{{ booking_date }}"
             >
         </div>
-        <div class="col-md-3">
-            <label for="room" class="form-label">Помещение</label>
+        <div class="col-md-4">
+            <label for="role" class="form-label">Роль пользователя</label>
+            <select id="role" name="role" class="form-select">
+                <option value="">Все роли</option>
+                {% for role_value, role_label in role_choices %}
+                <option
+                    value="{{ role_value }}"
+                    {% if selected_role == role_value %}selected{% endif %}
+                >
+                    {{ role_label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="room" class="form-label">Помещение / прибор</label>
             <select id="room" name="room" class="form-select">
                 <option value="">Все помещения</option>
                 {% for room in rooms %}
@@ -38,7 +63,7 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <label for="user" class="form-label">Пользователь</label>
             <select id="user" name="user" class="form-select">
                 <option value="">Все пользователи</option>
@@ -54,17 +79,20 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <label for="sort" class="form-label">Сортировать по</label>
             <select id="sort" name="sort" class="form-select">
                 <option value="date" {% if sort == "date" %}selected{% endif %}>
                     Дате
                 </option>
                 <option value="room" {% if sort == "room" %}selected{% endif %}>
-                    Помещению
+                    Помещению / прибору
                 </option>
                 <option value="user" {% if sort == "user" %}selected{% endif %}>
                     Пользователю
+                </option>
+                <option value="cost" {% if sort == "cost" %}selected{% endif %}>
+                    Стоимости (по убыванию)
                 </option>
             </select>
         </div>
@@ -82,9 +110,14 @@
 <ul class="list-group mb-4">
 {% for booking in bookings %}
     <li class="list-group-item d-flex justify-content-between align-items-center">
-        <a href="{% url 'bookings:detail' booking.id %}">
-            Бронирование №{{ booking.id }}: {{ booking.room_name }} – {{ booking.booking_date }} ({{ booking.user_name }})
-        </a>
+        <div>
+            <a href="{% url 'bookings:detail' booking.id %}">
+                Бронирование №{{ booking.id }}: {{ booking.room_name }} — {{ booking.booking_date|date:"d.m.Y" }} ({{ booking.user_name }})
+            </a>
+            <small class="text-muted d-block">
+                Роль: {{ booking.user_role }} | Вместимость: {{ booking.capacity }} | Стоимость: {{ booking.cost }} руб.
+            </small>
+        </div>
         {% include "bookings/includes/booking_status.html" %}
     </li>
 {% empty %}

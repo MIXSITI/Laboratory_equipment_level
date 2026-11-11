@@ -1,40 +1,66 @@
 {% extends "base.html" %}
 
 {% block title %}
-{% if room %}
 {{ room.name }} – Roomly
-{% else %}
-Помещение не найдено – Roomly
-{% endif %}
 {% endblock %}
 
 {% block content %}
-{% if room %}
-<div class="card room-card">
+<div class="card room-card mb-4">
     <div class="card-body">
-        <h1 class="card-title">
+        <h1 class="card-title h3">
             {{ room.name }}
         </h1>
         <p class="card-text">
             <strong>ID:</strong> {{ room.id }}
         </p>
         <p class="card-text">
-            <strong>Вместимость:</strong>
-            {{ room.capacity }} мест
+            <strong>Инвентарный номер:</strong> {{ room.inventory_number|default:"—" }}
+        </p>
+        <p class="card-text">
+            <strong>Вместимость:</strong> {{ room.capacity }} мест
+        </p>
+        <p class="card-text">
+            <strong>Требуемый уровень допуска:</strong> Уровень {{ room.required_level }}
+        </p>
+        <p class="card-text">
+            <strong>Почасовая ставка:</strong> {{ room.hourly_rate }} руб/час
+        </p>
+        <p class="card-text">
+            <strong>Техническое состояние:</strong>
+            {% if room.is_ready %}
+                <span class="badge bg-success">{{ readiness }}</span>
+            {% else %}
+                <span class="badge bg-warning text-dark">{{ readiness }}</span>
+            {% endif %}
+        </p>
+        <p class="card-text">
+            <strong>Доступность сегодня:</strong>
+            {% if available_today %}
+                <span class="badge bg-success">доступно</span>
+            {% else %}
+                <span class="badge bg-danger">недоступно / занято</span>
+            {% endif %}
         </p>
     </div>
 </div>
-{% else %}
-<h1 class="text-danger">
-    Помещение не найдено
-</h1>
-<p>
-    Помещение с указанным идентификатором отсутствует.
-</p>
-{% endif %}
+
+<h2 class="h4 mb-3">Активные бронирования данного ресурса</h2>
+<ul class="list-group mb-3">
+{% for booking in room_bookings %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <a href="{% url 'bookings:detail' booking.id %}">
+            Бронирование №{{ booking.id }} — {{ booking.booking_date|date:"d.m.Y" }} ({{ booking.user.name }})
+        </a>
+        <span class="badge bg-primary">{{ booking.duration_hours }} ч.</span>
+    </li>
+{% empty %}
+    <li class="list-group-item text-muted">Активных бронирований пока нет.</li>
+{% endfor %}
+</ul>
+
 <a
     href="{% url 'rooms:list' %}"
-    class="btn btn-outline-secondary mt-3"
+    class="btn btn-outline-secondary mt-2"
 >
     ← к списку помещений
 </a>

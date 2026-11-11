@@ -1,241 +1,129 @@
 # Roomly – система бронирования лабораторного оборудования и помещений
 
-Система бронирования помещений и оборудования учебно-научной лаборатории на Python с веб-интерфейсом на Django и доступом к данным через Django ORM.
+Система бронирования помещений и специализированного оборудования учебно-научной лаборатории (вариант 209) на Python с веб-интерфейсом на Django и слоем доступа к данным на основе Django ORM.
 
 ## 1. Назначение проекта
-Roomly – учебное веб-приложение для управления оборудованием, помещениями и их бронированием.
-Проект позволяет просматривать каталог приборов и помещений, информацию об их готовности и доступности, данные пользователей, историю бронирований, искать свободные ресурсы на дату, фильтровать, сортировать и просматривать постранично список заявок, а также получать сводную аналитическую статистику через веб-интерфейс Django.
-Проект развивается поэтапно: консольная версия приложения (ПР1–ПР3) дополнена веб-интерфейсом (ПР5), переведена на систему шаблонов Django (ПР6), исследована на уровне прямых SQL-запросов к SQLite (ПР7) и переведена на полноценный слой доступа к данным через Django ORM (ПР9).
+Roomly – сквозное учебное веб-приложение для управления лабораторным оборудованием, помещениями и заявками на их бронирование.
+Проект позволяет:
+- просматривать каталог оборудования и помещений с учётом исправности, нахождения на ТО, требуемого уровня допуска и почасовой ставки;
+- выполнять регистронезависимый поиск (включая кириллицу) по названию и инвентарному номеру;
+- искать свободные и исправные ресурсы на выбранную дату;
+- фильтровать список бронирований по дате, ресурсу, пользователю, роли связанного пользователя и поисковой строке, сортировать результаты и просматривать их постранично;
+- просматривать детальные карточки объектов с обработкой отсутствующих записей (`get_object_or_404`) и сводную аналитическую статистику.
+
+Проект развивался поэтапно: консольное ООП-приложение с JSON-хранилищем (ПР1–ПР3) -> базовый веб-интерфейс Django (ПР5) -> система шаблонов DTL и статика (ПР6) -> реляционная БД SQLite и SQL-запросы (ПР7) -> модели, миграции и запросы Django ORM (ПР9).
 
 ## 2. Используемые технологии
-- Python 3;
-- Django 5;
-- Django ORM (Object-Relational Mapping);
-- SQLite 3 (база данных `db.sqlite3`);
-- Django Template Language (DTL);
-- HTML5;
-- CSS3;
-- JavaScript;
-- Bootstrap 5;
-- JSON и SQLite для исходного хранения данных;
-- Git;
-- pytest;
-- flake8.
+- Python 3.11+;
+- Django 5.2 (MTV, Django ORM, миграции, фикстуры, Django Admin);
+- Django Debug Toolbar (инспекция SQL-запросов в режиме отладки);
+- SQLite 3 (`db.sqlite3` – база Django ORM; `data/roomly.sqlite` – исходная база ПР7);
+- Django Template Language (DTL), HTML5, CSS3, JavaScript, Bootstrap 5.3;
+- pytest, pytest-django, Django `TestCase`, flake8;
+- Git и GitHub.
 
-## 3. Предметная область и модели Django ORM (ПР9)
-В системе описаны следующие ORM-модели:
-- **`Room` (`rooms/models.py`)** — помещения и лабораторное оборудование:
-  - `name` (`CharField`) — название помещения/оборудования;
-  - `capacity` (`PositiveIntegerField`) — вместимость;
-  - `inventory_number` (`CharField`) — инвентарный номер;
-  - `operational` (`BooleanField`) — признак исправности;
-  - `under_maintenance` (`BooleanField`) — признак нахождения на ТО;
-  - `required_level` (`PositiveIntegerField`) — требуемый допуск;
-  - `hourly_rate` (`FloatField`) — почасовая ставка аренды;
-  - Метод `is_suitable_for(people_count)`.
-- **`User` (`users/models.py`)** — пользователи лаборатории:
-  - `name` (`CharField`) — ФИО пользователя;
-  - `email` (`EmailField`) — адрес электронной почты;
-  - `role` (`CharField`) — роль (студент, сотрудник);
-  - `access_level` (`PositiveIntegerField`) — уровень допуска;
-  - `briefing_passed` (`BooleanField`) — отметка о прохождении инструктажа.
-- **`Booking` (`bookings/models.py`)** — бронирования:
-  - `room` (`ForeignKey(Room, on_delete=models.PROTECT, related_name="bookings")`) — ссылка на помещение;
-  - `user` (`ForeignKey(User, on_delete=models.PROTECT, related_name="bookings")`) — ссылка на пользователя;
-  - `booking_date` (`DateField`) — дата бронирования;
-  - `duration_hours` (`FloatField`) — длительность в часах;
-  - `cost` (`FloatField`) — стоимость бронирования;
-  - `is_cancelled` (`BooleanField`) — признак отмены;
-  - Метод `cancel()` для отмены бронирования;
-  - Свойство `status` («Отменено» / «Активно»).
+## 3. Модели данных Django ORM (ПР9)
+- **`Room` (`rooms/models.py`)** – лабораторное оборудование и помещения:
+  - `name` (`CharField`) – наименование прибора / помещения;
+  - `capacity` (`PositiveIntegerField`, `default=1`) – вместимость;
+  - `inventory_number` (`CharField`, `blank=True`, `default=""`) – инвентарный номер;
+  - `operational` (`BooleanField`, `default=True`) – признак исправности;
+  - `under_maintenance` (`BooleanField`, `default=False`) – нахождение на техобслуживании;
+  - `required_level` (`PositiveIntegerField`, `validators=[1..3]`) – требуемый уровень допуска;
+  - `hourly_rate` (`FloatField`, `MinValueValidator(0.0)`) – почасовая ставка;
+  - свойство `is_ready`, методы `check_readiness()`, `is_suitable_for()`, `is_suitable_for_level()`.
+- **`User` (`users/models.py`)** – пользователи лаборатории:
+  - `name` (`CharField`) – ФИО пользователя;
+  - `email` (`EmailField`) – электронная почта;
+  - `role` (`CharField`, `choices`: `студент` / `сотрудник`) – роль пользователя;
+  - `access_level` (`PositiveIntegerField`, `validators=[1..3]`) – уровень допуска;
+  - `briefing_passed` (`BooleanField`, `default=True`) – отметка о прохождении инструктажа по ТБ;
+  - методы `has_access(required_level)`, `is_student()`.
+- **`Booking` (`bookings/models.py`)** – заявки на бронирование:
+  - `room` (`ForeignKey(Room, on_delete=models.PROTECT, related_name="bookings")`);
+  - `user` (`ForeignKey(User, on_delete=models.PROTECT, related_name="bookings")`);
+  - `booking_date` (`DateField`) – дата бронирования;
+  - `duration_hours` (`FloatField`, `MinValueValidator(0.5)`) – длительность в часах;
+  - `cost` (`FloatField`, `MinValueValidator(0.0)`) – стоимость бронирования;
+  - `is_cancelled` (`BooleanField`, `default=False`) – признак отмены;
+  - `notes` (`TextField`, `blank=True`, `null=True`) – необязательное примечание;
+  - метод `cancel()` (`save(update_fields=["is_cancelled"])`) и свойство `status`.
 
-## 4. Структура проекта
+## 4. Основные веб-страницы и ORM-операции
+- `/` – главная страница с подборками топ-3 готовых приборов и ближайших заявок (срез `QuerySet [:3]`, `select_related`);
+- `/rooms/` и `/equipment/` – каталоги ресурсов с поиском по строковым полям (`Q(name__icontains=q) | Q(inventory_number__icontains=q)`), фильтрацией по вместимости / уровню допуска и готовности;
+- `/rooms/<id>/` и `/equipment/<id>/` – карточки ресурсов (`get_object_or_404`, обратная связь `room.bookings`, `.exists()`);
+- `/rooms/available/` – поиск свободных и исправных ресурсов на дату (`filter` + `values_list` + `exclude`);
+- `/bookings/` – список активных бронирований с фильтрацией по дате, помещению, пользователю, полям связанных моделей (`user__role`, `room__name`, `user__name`), безопасной сортировкой (`sort_fields`), `annotate(F(...))`, `values(...)` и пагинацией (`Paginator` + `{% querystring %}`);
+- `/bookings/<id>/` – детальная карточка бронирования (`get_object_or_404` + `select_related("room", "user")`);
+- `/bookings/statistics/` – аналитическая сводка (`Room.objects.annotate(Count(..., filter=Q(...)), Sum(...))` и `aggregate(Count, Sum, Avg, Min, Max)`);
+- `/admin/` – панель администратора Django с зарегистрированными моделями `Room`, `User`, `Booking`.
+
+## 5. Структура проекта
 ```text
 work/
-├── bookings/
-│   ├── migrations/
-│   │   └── 0001_initial.py
-│   ├── templates/
-│   │   └── bookings/
-│   │       ├── includes/
-│   │       │   └── booking_status.html
-│   │       ├── booking_detail.html
-│   │       ├── booking_list.html
-│   │       └── statistics.html
-│   ├── models.py
-│   ├── urls.py
-│   └── views.py
-│
-├── homepage/
-│   ├── static/
-│   │   └── homepage/
-│   │       ├── css/
-│   │       │   └── style.css
-│   │       ├── img/
-│   │       │   └── logo.png
-│   │       └── js/
-│   │           └── main.js
-│   ├── templates/
-│   │   └── homepage/
-│   │       ├── 404.html
-│   │       └── index.html
-│   ├── urls.py
-│   └── views.py
-│
-├── rooms/
-│   ├── migrations/
-│   │   └── 0001_initial.py
-│   ├── templates/
-│   │   └── rooms/
-│   │       ├── includes/
-│   │       │   └── room_card.html
-│   │       ├── available.html
-│   │       ├── room_detail.html
-│   │       └── room_list.html
-│   ├── models.py
-│   ├── urls.py
-│   └── views.py
-│
-├── users/
-│   ├── migrations/
-│   │   └── 0001_initial.py
-│   ├── models.py
-│   └── apps.py
-│
-├── equipment/
-│   ├── templates/
-│   │   └── equipment/
-│   │       ├── includes/
-│   │       │   └── equipment_card.html
-│   │       ├── equipment_detail.html
-│   │       └── equipment_list.html
-│   ├── urls.py
-│   └── views.py
-│
-├── templates/
-│   ├── includes/
-│   │   └── navigation.html
-│   ├── 404.html
-│   └── base.html
-│
-├── db/
-│   ├── __init__.py
-│   ├── database.py
-│   ├── import_json.py
-│   ├── import_sqlite_to_orm.py
-│   ├── init_db.py
-│   └── inspect_source_db.py
-│
-├── sql/
-│   ├── queries.sql
-│   └── schema.sql
-│
-├── models/
-│   ├── __init__.py
-│   ├── bookings.py
-│   ├── equipment.py
-│   ├── rooms.py
-│   └── users.py
-│
-├── data/
-│   ├── bookings.json
-│   ├── equipment.json
-│   ├── rooms.json
-│   ├── users.json
-│   └── roomly.sqlite
-│
-├── tests/
-│   ├── test_bookings.py
-│   ├── test_equipment.py
-│   ├── test_users.py
-│   └── test_web.py
-│
-├── roomly/
-│   ├── settings.py
-│   └── urls.py
-│
-├── db.sqlite3
-├── main.py
-├── storage.py
-├── utils.py
-├── manage.py
-└── README.md
+├── bookings/                 # Приложение бронирований (models, views, urls, admin, templates, migrations, tests)
+├── equipment/                # Приложение каталога лабораторного оборудования (views, urls, templates, tests)
+├── homepage/                 # Главная страница, обработчик 404 и статика (CSS, JS, логотип)
+├── rooms/                    # Приложение помещений/ресурсов (models, views, urls, admin, apps, templates, migrations, tests)
+├── users/                    # Приложение пользователей предметной области (models, admin, migrations, tests)
+├── roomly/                   # Конфигурация Django-проекта (settings.py, urls.py, wsgi.py, asgi.py)
+├── templates/                # Базовый шаблон base.html, 404.html и навигация includes/navigation.html
+├── db/                       # Скрипты работы с БД ПР7 и переноса в ORM (import_sqlite_to_orm.py, inspect_source_db.py)
+├── sql/                      # SQL-схема (schema.sql) и SQL-запросы ПР7 (queries.sql)
+├── data/                     # Исходные JSON, база ПР7 (roomly.sqlite) и фикстура Django (fixtures/initial_data.json)
+├── models/                   # Классы предметной области консольной версии ПР1–ПР3
+├── tests/                    # Автотесты pytest (модели ПР3 и веб-интеграция test_web.py)
+├── main.py                   # Консольное приложение ПР1–ПР3
+├── storage.py                # Модуль JSON-хранилища ПР1–ПР3
+├── utils.py                  # Вспомогательные функции ввода и инспекции
+├── manage.py                 # Утилита управления Django-проектом
+├── pytest.ini                # Конфигурация pytest и pytest-django
+└── requirements.txt          # Зависимости проекта
 ```
 
-## 5. Веб-интерфейс
-Веб-часть приложения реализована на Django.
-Основные страницы:
-- главная страница (`/`);
-- каталог помещений (`/rooms/`) и оборудования (`/equipment/`);
-- поиск свободных помещений на выбранную дату (`/rooms/available/`);
-- детальная карточка помещения (`/rooms/<id>/`) или оборудования (`/equipment/<id>/`);
-- список бронирований с фильтрацией, сортировкой и пагинацией (`/bookings/`);
-- детальная карточка бронирования (`/bookings/<id>/`);
-- страница сводной аналитической статистики (`/bookings/statistics/`).
-
-Все страницы получают данные через методы Django ORM и передают их в шаблоны DTL.
-
-## 6. Фильтрация, сортировка и пагинация бронирований (ПР9)
-- **Фильтрация**: реализован отбор активных бронирований по дате (`?date=YYYY-MM-DD`), конкретному помещению (`?room=<id>`) и пользователю (`?user=<id>`).
-- **Сортировка**: динамический порядок отображения по дате, названию помещения или имени пользователя (`?sort=date|room|user`).
-- **Пагинация**: разбиение списка по 5 записей на страницу с помощью `Paginator` и сохранение параметров GET-запроса при пагинации через `{% querystring %}`.
-
-## 7. Перенос данных из SQLite в Django ORM
-Перенос данных из базы данных ПР7 (`data/roomly.sqlite`) в управляемую Django базу данных `db.sqlite3` выполняется скриптом `db/import_sqlite_to_orm.py`:
+## 6. Установка и запуск проекта
+1. Клонировать репозиторий и перейти в каталог проекта:
 ```bash
-python db/import_sqlite_to_orm.py
+git clone https://github.com/MIXSITI/Laboratory_equipment_level.git
+cd Laboratory_equipment_level
 ```
-Скрипт использует `update_or_create()` в рамках атомарной транзакции `transaction.atomic()`, гарантируя сохранение идентификаторов и внешних ключей.
-
-## 8. Тестирование
-Автоматизированные тесты pytest находятся в каталоге `tests/`:
-- `test_bookings.py`
-- `test_equipment.py`
-- `test_users.py`
-- `test_web.py` (включая проверку фильтрации, сортировки, пагинации, обработки 404 и аналитики)
-
-Запуск тестов:
+2. Создать и активировать виртуальное окружение:
 ```bash
-pytest -v
+python -m venv venv
+venv\Scripts\activate
 ```
-
-## 9. Проверка качества кода
-Проверка соответствия стандарту PEP 8 линтером `flake8`:
+3. Установить зависимости:
 ```bash
-flake8 . --extend-exclude=venv
+pip install -r requirements.txt
 ```
-Системная проверка Django:
-```bash
-python manage.py check
-```
-
-## 10. Запуск проекта
-1. Применить миграции:
+4. Применить миграции Django:
 ```bash
 python manage.py migrate
 ```
-2. Выполнить перенос данных (при необходимости):
+5. Наполнить базу `db.sqlite3` исходными данными (любым из двух способов):
 ```bash
+# Способ 1: перенос из базы ПР7 data/roomly.sqlite скриптом ORM
 python db/import_sqlite_to_orm.py
+
+# Способ 2: загрузка подготовленной фикстуры Django
+python manage.py loaddata data/fixtures/initial_data.json
 ```
-3. Запустить сервер разработки:
+6. Запустить сервер разработки:
 ```bash
 python manage.py runserver
 ```
-Веб-интерфейс доступен по адресу:
-```text
-http://127.0.0.1:8000/
+Приложение будет доступно по адресу `http://127.0.0.1:8000/` (в режиме `DEBUG=True` справа отображается панель **Django Debug Toolbar** для просмотра SQL-запросов).
+
+## 7. Проверка и тестирование
+```bash
+python manage.py check
+python manage.py makemigrations --check
+python manage.py showmigrations
+python manage.py test
+pytest -v
+flake8 . --extend-exclude=venv
 ```
 
-## 11. Текущее состояние проекта
-На этапе завершения ПР9 реализовано:
-- Описаны модели Django ORM `Room`, `User`, `Booking` с внешними ключами `ForeignKey`;
-- Настроены параметры связей `on_delete=models.PROTECT` и `related_name="bookings"`;
-- Созданы и применены миграции `0001_initial.py`;
-- Исходные данные успешно перенесены в ORM-базу `db.sqlite3`;
-- Представления переведены на использование менеджеров ORM (`all`, `filter`, `exclude`, `select_related`, `annotate`, `values`, `order_by`, `aggregate`, `Count`, `Sum`, `Avg`);
-- Реализована параметрическая фильтрация, сортировка и пагинация списка бронирований;
-- Поиск свободных помещений реализован через ORM с исключением занятых объектов;
-- Страница статистики рассчитывает аналитику методами `annotate()` и `aggregate()`;
-- 100% автотестов проходят успешно (44/44);
-- Код полностью соответствует PEP 8.
+## 8. Автор
+- **Кобылянский С.С.**, группа **ЭФБО-10-24** (РТУ МИРЭА).

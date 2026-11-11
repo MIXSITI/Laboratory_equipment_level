@@ -5,7 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
-#
+
 # Distribution / packaging
 .Python
 build/
@@ -38,6 +38,8 @@ venv.bak/
 # IDE and editors
 .idea/
 .vscode/
+.cursor/
+AUDIT_AND_PLAN.md
 *.swp
 *.swo
 *~
@@ -55,4 +57,3 @@ htmlcov/
 # Database
 *.sqlite3
 db.sqlite3
-

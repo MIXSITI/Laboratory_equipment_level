@@ -1,14 +1,26 @@
 <article class="card room-card mb-3">
     <div class="card-body">
-        <h2 class="card-title">
-            {{ room.name|default:"Без названия" }}
-        </h2>
-        <p class="card-text">
-            Вместимость: {{ room.capacity }} мест
+        <div class="d-flex justify-content-between align-items-start">
+            <h2 class="card-title h4">
+                {{ room.name|default:"Без названия" }}
+                {% if room.inventory_number %}
+                    <small class="text-muted">({{ room.inventory_number }})</small>
+                {% endif %}
+            </h2>
+            {% if room.is_ready %}
+                <span class="badge bg-success">готов к работе</span>
+            {% else %}
+                <span class="badge bg-warning text-dark">ТО / неисправен</span>
+            {% endif %}
+        </div>
+        <p class="card-text mb-1">
+            <strong>Вместимость:</strong> {{ room.capacity }} мест |
+            <strong>Допуск:</strong> ур. {{ room.required_level }} |
+            <strong>Ставка:</strong> {{ room.hourly_rate }} руб/час
         </p>
         <a
             href="{% url 'rooms:detail' room.id %}"
-            class="btn btn-primary"
+            class="btn btn-primary btn-sm mt-2"
         >
             Подробнее
         </a>

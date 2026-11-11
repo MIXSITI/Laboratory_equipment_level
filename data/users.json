@@ -2,6 +2,7 @@
     {
         "id": 1,
         "name": "Иванов Алексей Сергеевич",
+        "email": "ivanov@edu.mirea.ru",
         "role": "студент",
         "access_level": 2,
         "briefing_passed": true
@@ -9,6 +10,7 @@
     {
         "id": 2,
         "name": "Петров Дмитрий Иванович",
+        "email": "petrov@edu.mirea.ru",
         "role": "студент",
         "access_level": 1,
         "briefing_passed": false
@@ -16,6 +18,7 @@
     {
         "id": 3,
         "name": "Сидорова Мария Павловна",
+        "email": "sidorova@mirea.ru",
         "role": "сотрудник",
         "access_level": 3,
         "briefing_passed": true

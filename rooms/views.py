@@ -1,30 +1,70 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from django.shortcuts import render
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, render
 
 from bookings.models import Booking
 from rooms.models import Room
 
 
 def rooms(request):
-    rooms_list = Room.objects.order_by("name")
+    query = request.GET.get("q", "").strip()
+    min_capacity = request.GET.get("capacity", "").strip()
+    only_ready = request.GET.get("ready") == "1"
+
+    rooms_list = Room.objects.all()
+
+    if query:
+        rooms_list = rooms_list.filter(
+            Q(name__icontains=query) | Q(inventory_number__icontains=query)
+        )
+
+    if min_capacity.isdigit():
+        rooms_list = rooms_list.filter(capacity__gte=int(min_capacity))
+
+    if only_ready:
+        rooms_list = rooms_list.filter(
+            operational=True,
+            under_maintenance=False,
+        )
+
+    rooms_list = rooms_list.order_by("name")
+
+    context = {
+        "rooms": rooms_list,
+        "search_query": query,
+        "min_capacity": min_capacity,
+        "only_ready": only_ready,
+    }
     return render(
         request,
         "rooms/room_list.html",
-        {"rooms": rooms_list},
+        context,
     )
 
 
 def room_detail(request, room_id: int):
-    try:
-        room = Room.objects.get(pk=room_id)
-    except Room.DoesNotExist:
-        room = None
+    room = get_object_or_404(Room, pk=room_id)
+    room_bookings = (
+        room.bookings
+        .filter(is_cancelled=False)
+        .select_related("user")
+        .order_by("booking_date", "pk")[:5]
+    )
+    is_booked_today = room.bookings.filter(
+        booking_date=date.today(),
+        is_cancelled=False,
+    ).exists()
+    context = {
+        "room": room,
+        "room_bookings": room_bookings,
+        "available_today": room.is_ready and not is_booked_today,
+        "readiness": room.check_readiness(),
+    }
     return render(
         request,
         "rooms/room_detail.html",
-        {"room": room},
-        status=404 if room is None else 200,
+        context,
     )
 
 
@@ -49,9 +89,12 @@ def available_rooms(request):
                 "room_id",
                 flat=True,
             )
-            rooms_list = Room.objects.exclude(
-                pk__in=booked_room_ids,
-            ).order_by("name")
+            rooms_list = (
+                Room.objects
+                .filter(operational=True, under_maintenance=False)
+                .exclude(pk__in=booked_room_ids)
+                .order_by("name")
+            )
 
     context = {
         "rooms": rooms_list,

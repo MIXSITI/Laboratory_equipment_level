@@ -7,12 +7,44 @@
 {% block content %}
 <h1 class="display-4">Roomly</h1>
 <p class="lead">
-    Система бронирования помещений. Лабораторное оборудование.
+    Система бронирования помещений и лабораторного оборудования.
 </p>
 <p>Основные разделы:</p>
-<div class="d-flex flex-wrap gap-2">
-    <a href="{% url 'rooms:list' %}" class="btn btn-primary">Помещения</a>
-    <a href="{% url 'equipment:equipment_list' %}" class="btn btn-info text-white">Оборудование</a>
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{% url 'rooms:list' %}" class="btn btn-primary">Помещения и ресурсы</a>
+    <a href="{% url 'equipment:equipment_list' %}" class="btn btn-info text-white">Лабораторное оборудование</a>
     <a href="{% url 'bookings:bookings' %}" class="btn btn-secondary">Бронирования</a>
+    <a href="{% url 'bookings:statistics' %}" class="btn btn-outline-primary">Статистика</a>
+</div>
+
+<div class="row g-4 mt-2">
+    <div class="col-md-6">
+        <h2 class="h4">Готовое к работе оборудование (топ-3)</h2>
+        <ul class="list-group">
+        {% for room in featured_rooms %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="{% url 'rooms:detail' room.id %}">{{ room.name }}</a>
+                <span class="badge bg-success">{{ room.hourly_rate }} руб/ч</span>
+            </li>
+        {% empty %}
+            <li class="list-group-item text-muted">Нет доступного оборудования.</li>
+        {% endfor %}
+        </ul>
+    </div>
+    <div class="col-md-6">
+        <h2 class="h4">Ближайшие активные заявки (топ-3)</h2>
+        <ul class="list-group">
+        {% for booking in recent_bookings %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="{% url 'bookings:detail' booking.id %}">
+                    №{{ booking.id }}: {{ booking.room.name }} ({{ booking.user.name }})
+                </a>
+                <span class="text-muted small">{{ booking.booking_date|date:"d.m.Y" }}</span>
+            </li>
+        {% empty %}
+            <li class="list-group-item text-muted">Активных заявок нет.</li>
+        {% endfor %}
+        </ul>
+    </div>
 </div>
 {% endblock %}

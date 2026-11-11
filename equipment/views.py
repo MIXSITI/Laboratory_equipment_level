@@ -1,16 +1,42 @@
 from datetime import date
 
-from django.shortcuts import render
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, render
 
-from models.bookings import is_equipment_available
-from models.equipment import find_equipment_by_id
-from storage import load_bookings, load_equipment, load_users
+from bookings.models import Booking
+from rooms.models import Room
 
 
 def equipment_list(request):
-    equipment_items = load_equipment("data/equipment.json")
+    query = request.GET.get("q", "").strip()
+    level = request.GET.get("level", "").strip()
+    only_ready = request.GET.get("ready") == "1"
+
+    equipment_items = Room.objects.all()
+
+    if query:
+        equipment_items = equipment_items.filter(
+            Q(name__icontains=query) | Q(inventory_number__icontains=query)
+        )
+
+    if level.isdigit():
+        equipment_items = equipment_items.filter(
+            required_level__lte=int(level),
+        )
+
+    if only_ready:
+        equipment_items = equipment_items.filter(
+            operational=True,
+            under_maintenance=False,
+        )
+
+    equipment_items = equipment_items.order_by("name")
+
     context = {
         "equipment_items": equipment_items,
+        "search_query": query,
+        "selected_level": level,
+        "only_ready": only_ready,
     }
     return render(
         request,
@@ -20,27 +46,13 @@ def equipment_list(request):
 
 
 def equipment_detail(request, equipment_id: int):
-    equipment_items = load_equipment("data/equipment.json")
-    item = find_equipment_by_id(equipment_items, equipment_id)
-    if item is None:
-        return render(
-            request,
-            "equipment/equipment_detail.html",
-            {"item": None},
-            status=404,
-        )
-
-    users_list = load_users("data/users.json")
-    bookings_list = load_bookings(
-        "data/bookings.json",
-        equipment_items,
-        users_list,
-    )
-    available = is_equipment_available(
-        bookings_list,
-        item,
-        date.today(),
-    )
+    item = get_object_or_404(Room, pk=equipment_id)
+    is_booked_today = Booking.objects.filter(
+        room=item,
+        booking_date=date.today(),
+        is_cancelled=False,
+    ).exists()
+    available = item.is_ready and not is_booked_today
     context = {
         "item": item,
         "available": available,
@@ -50,7 +62,6 @@ def equipment_detail(request, equipment_id: int):
         request,
         "equipment/equipment_detail.html",
         context,
-        status=200,
     )
 
 

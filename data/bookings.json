@@ -48,5 +48,55 @@
         "duration_hours": 2.0,
         "cost": 850.0,
         "is_cancelled": true
+    },
+    {
+        "id": 6,
+        "equipment_id": 1,
+        "room_id": 1,
+        "user_id": 3,
+        "booking_date": "2026-09-25",
+        "duration_hours": 2.0,
+        "cost": 2400.0,
+        "is_cancelled": false
+    },
+    {
+        "id": 7,
+        "equipment_id": 1,
+        "room_id": 1,
+        "user_id": 1,
+        "booking_date": "2026-09-28",
+        "duration_hours": 2.0,
+        "cost": 1200.0,
+        "is_cancelled": false
+    },
+    {
+        "id": 8,
+        "equipment_id": 3,
+        "room_id": 3,
+        "user_id": 3,
+        "booking_date": "2026-10-02",
+        "duration_hours": 3.0,
+        "cost": 2550.0,
+        "is_cancelled": false
+    },
+    {
+        "id": 9,
+        "equipment_id": 1,
+        "room_id": 1,
+        "user_id": 1,
+        "booking_date": "2026-10-05",
+        "duration_hours": 4.0,
+        "cost": 2400.0,
+        "is_cancelled": false
+    },
+    {
+        "id": 10,
+        "equipment_id": 2,
+        "room_id": 2,
+        "user_id": 3,
+        "booking_date": "2026-10-10",
+        "duration_hours": 1.5,
+        "cost": 3750.0,
+        "is_cancelled": false
     }
 ]

@@ -1,11 +1,15 @@
 import json
 import sqlite3
+import sys
 from pathlib import Path
 from typing import Any
 
-from db.database import get_connection
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+from db.database import get_connection  # noqa: E402
+
 ROOMS_FILE = BASE_DIR / "data" / "rooms.json"
 EQUIPMENT_FILE = BASE_DIR / "data" / "equipment.json"
 USERS_FILE = BASE_DIR / "data" / "users.json"

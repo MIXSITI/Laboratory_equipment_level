@@ -1,3 +1,5 @@
+import importlib.util
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -9,6 +11,12 @@ SECRET_KEY = (
 DEBUG = True
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "testserver"]
+
+INTERNAL_IPS = ["127.0.0.1", "localhost"]
+
+TESTING = "test" in sys.argv or "pytest" in sys.modules
+HAS_DEBUG_TOOLBAR = importlib.util.find_spec("debug_toolbar") is not None
+ENABLE_DEBUG_TOOLBAR = DEBUG and HAS_DEBUG_TOOLBAR and not TESTING
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -33,6 +41,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if ENABLE_DEBUG_TOOLBAR:
+    INSTALLED_APPS.append('debug_toolbar')
+    MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
 
 ROOT_URLCONF = 'roomly.urls'
 

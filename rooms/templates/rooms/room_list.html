@@ -6,13 +6,56 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Помещения</h1>
+    <h1>Помещения и лабораторные ресурсы</h1>
     <a href="{% url 'rooms:available' %}" class="btn btn-success">
         Найти свободное помещение
     </a>
 </div>
+
+<form method="get" class="row g-3 align-items-end mb-4">
+    <div class="col-md-5">
+        <label for="q" class="form-label">Поиск по названию или инв. номеру</label>
+        <input
+            type="text"
+            id="q"
+            name="q"
+            class="form-control"
+            placeholder="Например: Спектрофотометр или EQ-301"
+            value="{{ search_query|default:'' }}"
+        >
+    </div>
+    <div class="col-md-3">
+        <label for="capacity" class="form-label">Мин. вместимость</label>
+        <input
+            type="number"
+            id="capacity"
+            name="capacity"
+            min="1"
+            class="form-control"
+            value="{{ min_capacity|default:'' }}"
+        >
+    </div>
+    <div class="col-md-4">
+        <div class="form-check mb-2">
+            <input
+                class="form-check-input"
+                type="checkbox"
+                id="ready"
+                name="ready"
+                value="1"
+                {% if only_ready %}checked{% endif %}
+            >
+            <label class="form-check-label" for="ready">
+                Только исправные (без ТО)
+            </label>
+        </div>
+        <button type="submit" class="btn btn-primary me-2">Найти</button>
+        <a href="{% url 'rooms:list' %}" class="btn btn-outline-secondary">Сбросить</a>
+    </div>
+</form>
+
 <p>
-    Всего помещений: {{ rooms|length }}
+    Найдено ресурсов: {{ rooms|length }}
 </p>
 <ul class="list-unstyled">
 {% for room in rooms %}
