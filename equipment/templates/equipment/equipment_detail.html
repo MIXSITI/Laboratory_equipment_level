@@ -1,15 +1,10 @@
 {% extends "base.html" %}
 
 {% block title %}
-{% if item %}
 {{ item.name }} – Roomly
-{% else %}
-Оборудование не найдено – Roomly
-{% endif %}
 {% endblock %}
 
 {% block content %}
-{% if item %}
 <div class="card room-card">
     <div class="card-body">
         <h1 class="card-title h3">
@@ -45,14 +40,6 @@
         </p>
     </div>
 </div>
-{% else %}
-<h1 class="text-danger">
-    Оборудование не найдено
-</h1>
-<p class="lead">
-    Прибор с указанным ID не зарегистрирован в системе.
-</p>
-{% endif %}
 <a
     href="{% url 'equipment:equipment_list' %}"
     class="btn btn-outline-secondary mt-3"

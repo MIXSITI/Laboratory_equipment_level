@@ -40,6 +40,9 @@ venv.bak/
 .vscode/
 .cursor/
 AUDIT_AND_PLAN.md
+REVIEW_PR9_PR10.md
+DEFENSE_PR9_TABLE_7_3.md
+DEFENSE_PR10_TABLE_7_3.md
 *.swp
 *.swo
 *~

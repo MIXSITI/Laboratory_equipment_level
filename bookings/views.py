@@ -106,9 +106,6 @@ def booking_list(request):
     return render(request, "bookings/booking_list.html", context)
 
 
-bookings = booking_list
-
-
 def booking_detail(request, booking_id: int):
     booking = get_object_or_404(
         Booking.objects.select_related("room", "user"),

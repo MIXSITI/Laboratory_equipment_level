@@ -60,15 +60,21 @@ class Room(models.Model):
         verbose_name="Почасовая ставка",
     )
 
+    def _build_slug(self, base_slug: str) -> str:
+        suffix = f"-{self.pk}"
+        max_len = self._meta.get_field("slug").max_length
+        trimmed_base = base_slug[: max_len - len(suffix)].rstrip("-") or "room"
+        return f"{trimmed_base}{suffix}"
+
     def save(self, *args, **kwargs) -> None:
         if not self.slug:
             transliterated_name = unidecode(self.name)
             base_slug = slugify(transliterated_name) or "room"
             if self.pk:
-                self.slug = f"{base_slug}-{self.pk}"
+                self.slug = self._build_slug(base_slug)
             else:
                 super().save(*args, **kwargs)
-                self.slug = f"{base_slug}-{self.pk}"
+                self.slug = self._build_slug(base_slug)
                 super().save(update_fields=["slug"])
                 return
         super().save(*args, **kwargs)

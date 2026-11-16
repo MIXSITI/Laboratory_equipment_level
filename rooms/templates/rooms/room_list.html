@@ -13,18 +13,18 @@
 </div>
 
 <form method="get" class="row g-3 align-items-end mb-4">
-    <div class="col-md-5">
-        <label for="q" class="form-label">Поиск по названию или инв. номеру</label>
+    <div class="col-md-4">
+        <label for="q" class="form-label">Поиск по названию, инв. номеру или вместимости</label>
         <input
             type="text"
             id="q"
             name="q"
             class="form-control"
-            placeholder="Например: Спектрофотометр или EQ-301"
+            placeholder="Например: Спектрофотометр, EQ-301 или 30"
             value="{{ search_query|default:'' }}"
         >
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
         <label for="capacity" class="form-label">Мин. вместимость</label>
         <input
             type="number"
@@ -35,8 +35,30 @@
             value="{{ min_capacity|default:'' }}"
         >
     </div>
-    <div class="col-md-4">
-        <div class="form-check mb-2">
+    <div class="col-md-3">
+        <label for="room-sort" class="form-label">Сортировать по</label>
+        <select id="room-sort" name="sort" class="form-select">
+            <option value="name" {% if sort_by == "name" %}selected{% endif %}>
+                Названию
+            </option>
+            <option value="capacity" {% if sort_by == "capacity" %}selected{% endif %}>
+                Вместимости
+            </option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="room-direction" class="form-label">Порядок</label>
+        <select id="room-direction" name="direction" class="form-select">
+            <option value="asc" {% if direction == "asc" %}selected{% endif %}>
+                По возрастанию
+            </option>
+            <option value="desc" {% if direction == "desc" %}selected{% endif %}>
+                По убыванию
+            </option>
+        </select>
+    </div>
+    <div class="col-12 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="form-check">
             <input
                 class="form-check-input"
                 type="checkbox"
@@ -49,8 +71,10 @@
                 Только исправные (без ТО)
             </label>
         </div>
-        <button type="submit" class="btn btn-primary me-2">Найти</button>
-        <a href="{% url 'rooms:list' %}" class="btn btn-outline-secondary">Сбросить</a>
+        <div>
+            <button type="submit" class="btn btn-primary me-2">Найти</button>
+            <a href="{% url 'rooms:list' %}" class="btn btn-outline-secondary">Сбросить</a>
+        </div>
     </div>
 </form>
 

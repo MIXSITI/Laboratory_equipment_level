@@ -80,6 +80,31 @@ class RoomsViewsTests(TestCase):
         self.assertContains(res_search, "Спектрофотометр UV-1800")
         self.assertNotContains(res_search, "Ultimaker S3")
 
+        res_cap_query = self.client.get("/rooms/?q=60")
+        self.assertEqual(res_cap_query.status_code, 200)
+        self.assertContains(res_cap_query, "Сканирующий электронный микроскоп")
+        self.assertNotContains(res_cap_query, "Спектрофотометр UV-1800")
+
+        res_sort_desc = self.client.get(
+            "/rooms/?sort=capacity&direction=desc"
+        )
+        self.assertEqual(res_sort_desc.status_code, 200)
+        names = [room.name for room in res_sort_desc.context["rooms"]]
+        self.assertEqual(
+            names,
+            [
+                "Сканирующий электронный микроскоп",
+                "Спектрофотометр UV-1800",
+                "3D-принтер Ultimaker S3",
+            ],
+        )
+
+    def test_room_slug_max_length_protection(self):
+        long_name = "Щ" * 200
+        long_room = Room.objects.create(name=long_name, capacity=10)
+        self.assertLessEqual(len(long_room.slug), 180)
+        self.assertTrue(long_room.slug.endswith(f"-{long_room.pk}"))
+
     def test_room_slug_get_absolute_url_and_id_redirect(self):
         self.assertEqual(self.room_ready.slug, "spektrofotometr-uv-1800-1")
         expected_url = "/rooms/spektrofotometr-uv-1800-1/"

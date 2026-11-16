@@ -1,15 +1,4 @@
-import functools
 from datetime import date, datetime
-from typing import Any, Callable
-
-
-def log_operation(action_name: str) -> Callable:
-    def decorator(func: Callable) -> Callable:
-        @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
 
 
 def input_int(

@@ -1,6 +1,8 @@
 from datetime import date
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import ProtectedError
 from django.test import TestCase, override_settings
 
@@ -142,7 +144,7 @@ class BookingsViewsTests(TestCase):
             "/admin/bookings/booking/",
             {
                 "action": "restore_bookings",
-                "_selected_action": ["2"],
+                "_selected_action": ["2", "8"],
             },
             follow=True,
         )
@@ -151,3 +153,45 @@ class BookingsViewsTests(TestCase):
             Booking.objects.get(pk=2).status,
             Booking.Status.ACTIVE,
         )
+        self.assertEqual(
+            Booking.objects.get(pk=8).status,
+            Booking.Status.COMPLETED,
+        )
+
+    def test_roomly_operators_group_permissions(self):
+        auth_user_model = get_user_model()
+        room_ct = ContentType.objects.get_for_model(Room)
+        allowed_perms = Permission.objects.filter(
+            content_type=room_ct,
+            codename__in=("view_room", "add_room", "change_room"),
+        )
+        operators_group = Group.objects.create(name="Roomly Operators")
+        operators_group.permissions.set(allowed_perms)
+
+        operator_user = auth_user_model.objects.create_user(
+            username="roomly_operator",
+            email="operator@example.com",
+            password="OperatorPassword123!",
+            is_staff=True,
+            is_superuser=False,
+        )
+        operator_user.groups.add(operators_group)
+        self.client.force_login(operator_user)
+
+        self.assertTrue(operator_user.has_perm("rooms.view_room"))
+        self.assertTrue(operator_user.has_perm("rooms.add_room"))
+        self.assertTrue(operator_user.has_perm("rooms.change_room"))
+        self.assertFalse(operator_user.has_perm("rooms.delete_room"))
+
+        list_res = self.client.get("/admin/rooms/room/")
+        self.assertEqual(list_res.status_code, 200)
+
+        add_res = self.client.get("/admin/rooms/room/add/")
+        self.assertEqual(add_res.status_code, 200)
+
+        change_res = self.client.get("/admin/rooms/room/1/change/")
+        self.assertEqual(change_res.status_code, 200)
+        self.assertNotContains(change_res, "/admin/rooms/room/1/delete/")
+
+        delete_res = self.client.get("/admin/rooms/room/1/delete/")
+        self.assertEqual(delete_res.status_code, 403)

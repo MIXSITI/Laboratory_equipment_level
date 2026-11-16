@@ -50,11 +50,11 @@ Roomly – сквозное учебное веб-приложение для у
 
 ## 5. Основные веб-страницы и маршруты
 - `/` – главная страница с топ-3 готовых ресурсов и ближайших активных заявок (срез `QuerySet [:3]`, `select_related`);
-- `/rooms/` и `/equipment/` – каталоги ресурсов с регистронезависимым поиском (`Q(name__icontains=q) | Q(inventory_number__icontains=q)`) и фильтрами;
+- `/rooms/` и `/equipment/` – каталоги ресурсов с регистронезависимым поиском (`Q(name__icontains=q) | Q(inventory_number__icontains=q)`, а в `/rooms/` также по числовой вместимости), фильтрами и динамической сортировкой (`sort=name|capacity`, `direction=asc|desc`);
 - `/rooms/<slug:slug>/` – детальная карточка помещения по `slug` (`get_object_or_404`, `get_absolute_url()`, редирект со старых `/rooms/<int:room_id>/`);
 - `/equipment/<int:equipment_id>/` – детальная карточка лабораторного прибора;
 - `/rooms/available/` – поиск свободных и исправных ресурсов на дату (учитываются только брони со статусом `ACTIVE`);
-- `/bookings/` – список активных бронирований с фильтрацией, сортировкой (`sort_fields`), `annotate(F(...))`, `values(...)` и `Paginator` с `{% querystring %}`;
+- `/bookings/` – список бронирований с фильтрацией по статусу (`active|cancelled|completed|all`), дате, ресурсу, пользователю и его роли, поиском по связанным полям, сортировкой (`sort_fields`), `annotate(F(...))`, `values(...)` и `Paginator` с `{% querystring %}`;
 - `/bookings/<int:booking_id>/` – детальная карточка бронирования (`select_related("room", "user")`);
 - `/bookings/statistics/` – аналитическая сводка по всем статусам (`ACTIVE`, `CANCELLED`, `COMPLETED`) и выручке;
 - `/admin/` – административная панель Django.

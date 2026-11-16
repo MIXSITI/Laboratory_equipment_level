@@ -11,13 +11,18 @@ def rooms(request):
     query = request.GET.get("q", "").strip()
     min_capacity = request.GET.get("capacity", "").strip()
     only_ready = request.GET.get("ready") == "1"
+    sort_by = request.GET.get("sort", "name").strip()
+    direction = request.GET.get("direction", "asc").strip()
 
     rooms_list = Room.objects.all()
 
     if query:
-        rooms_list = rooms_list.filter(
+        condition = (
             Q(name__icontains=query) | Q(inventory_number__icontains=query)
         )
+        if query.isdigit():
+            condition |= Q(capacity=int(query))
+        rooms_list = rooms_list.filter(condition)
 
     if min_capacity.isdigit():
         rooms_list = rooms_list.filter(capacity__gte=int(min_capacity))
@@ -28,13 +33,27 @@ def rooms(request):
             under_maintenance=False,
         )
 
-    rooms_list = rooms_list.order_by("name")
+    allowed_sort_fields = {
+        "name": "name",
+        "capacity": "capacity",
+    }
+    sort_field = allowed_sort_fields.get(sort_by, "name")
+    if sort_by not in allowed_sort_fields:
+        sort_by = "name"
+    if direction == "desc":
+        sort_field = f"-{sort_field}"
+    else:
+        direction = "asc"
+
+    rooms_list = rooms_list.order_by(sort_field, "id")
 
     context = {
         "rooms": rooms_list,
         "search_query": query,
         "min_capacity": min_capacity,
         "only_ready": only_ready,
+        "sort_by": sort_by,
+        "direction": direction,
     }
     return render(
         request,

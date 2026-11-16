@@ -65,6 +65,3 @@ def equipment_detail(request, equipment_id: int):
         "equipment/equipment_detail.html",
         context,
     )
-
-
-equipment = equipment_list

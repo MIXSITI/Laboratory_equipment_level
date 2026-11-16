@@ -44,7 +44,7 @@ class BookingAdmin(admin.ModelAdmin):
 
     @admin.action(description="Вернуть в активные")
     def restore_bookings(self, request, queryset):
-        updated = queryset.update(status=Booking.Status.ACTIVE)
+        updated = queryset.cancelled().update(status=Booking.Status.ACTIVE)
         self.message_user(
             request,
             f"Возвращено бронирований: {updated}.",
