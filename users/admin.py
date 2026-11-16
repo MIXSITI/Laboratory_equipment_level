@@ -8,8 +8,12 @@ from .models import User
 class UserBookingInline(admin.TabularInline):
     model = Booking
     fields = ("room", "booking_date", "status")
+    autocomplete_fields = ("room",)
     extra = 0
     can_delete = False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("room", "user")
 
 
 @admin.register(User)

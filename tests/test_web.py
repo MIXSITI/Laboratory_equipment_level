@@ -166,3 +166,14 @@ def test_bookings_filter_sort_related_and_pagination():
     res_err = client.get("/bookings/?date=wrong-date")
     assert res_err.status_code == 200
     assert "Укажите корректную дату" in res_err.content.decode("utf-8")
+
+    res_cancelled = client.get("/bookings/?status=cancelled")
+    body_cancelled = res_cancelled.content.decode("utf-8")
+    assert res_cancelled.status_code == 200
+    assert "Бронирование №5:" in body_cancelled
+    assert "Бронирование №1:" not in body_cancelled
+
+    res_completed = client.get("/bookings/?status=completed")
+    body_completed = res_completed.content.decode("utf-8")
+    assert res_completed.status_code == 200
+    assert "Бронирование №11:" in body_completed

@@ -14,11 +14,23 @@ def booking_list(request):
     room_id = request.GET.get("room", "").strip()
     user_id = request.GET.get("user", "").strip()
     role = request.GET.get("role", "").strip()
+    status_param = request.GET.get(
+        "status",
+        Booking.Status.ACTIVE,
+    ).strip()
     search = request.GET.get("search", "").strip()
     sort = request.GET.get("sort", "date").strip()
     error = None
 
-    bookings_data = Booking.objects.active()
+    if status_param == Booking.Status.CANCELLED:
+        bookings_data = Booking.objects.cancelled()
+    elif status_param == Booking.Status.COMPLETED:
+        bookings_data = Booking.objects.completed()
+    elif status_param == "all":
+        bookings_data = Booking.objects.all()
+    else:
+        status_param = Booking.Status.ACTIVE
+        bookings_data = Booking.objects.active()
 
     if booking_date:
         try:
@@ -82,6 +94,8 @@ def booking_list(request):
         "selected_room": room_id,
         "selected_user": user_id,
         "selected_role": role,
+        "selected_status": status_param,
+        "status_choices": Booking.Status.choices,
         "search_query": search,
         "sort": sort,
         "role_choices": User.ROLE_CHOICES,

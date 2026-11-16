@@ -10,8 +10,12 @@ from .models import Room
 class BookingInline(admin.TabularInline):
     model = Booking
     fields = ("user", "booking_date", "status")
+    autocomplete_fields = ("user",)
     extra = 0
     can_delete = False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("room", "user")
 
 
 @admin.register(Room)
