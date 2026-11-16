@@ -47,14 +47,16 @@ def room_detail(request, room_id: int):
     room = get_object_or_404(Room, pk=room_id)
     room_bookings = (
         room.bookings
-        .filter(is_cancelled=False)
+        .active()
         .select_related("user")
         .order_by("booking_date", "pk")[:5]
     )
-    is_booked_today = room.bookings.filter(
-        booking_date=date.today(),
-        is_cancelled=False,
-    ).exists()
+    is_booked_today = (
+        room.bookings
+        .active()
+        .for_date(date.today())
+        .exists()
+    )
     context = {
         "room": room,
         "room_bookings": room_bookings,
@@ -82,12 +84,11 @@ def available_rooms(request):
         except ValueError:
             error = "Укажите корректную дату."
         else:
-            booked_room_ids = Booking.objects.filter(
-                booking_date=selected_date,
-                is_cancelled=False,
-            ).values_list(
-                "room_id",
-                flat=True,
+            booked_room_ids = (
+                Booking.objects
+                .active()
+                .for_date(selected_date)
+                .values_list("room_id", flat=True)
             )
             rooms_list = (
                 Room.objects

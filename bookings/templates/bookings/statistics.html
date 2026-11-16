@@ -7,33 +7,54 @@
 {% block content %}
 <h1>Статистика бронирований</h1>
 <p class="lead">
-    Аналитические показатели, рассчитанные средствами Django ORM (<code>annotate()</code>, <code>aggregate()</code>, <code>Count</code>, <code>Sum</code>, <code>Avg</code>, <code>Min</code>, <code>Max</code> и <code>Q</code>).
+    Аналитические показатели, рассчитанные средствами Django ORM (<code>annotate()</code>, <code>aggregate()</code>, <code>Count</code>, <code>Sum</code>, <code>Avg</code>, <code>Min</code>, <code>Max</code> и <code>Q</code>) с учётом статусов <code>ACTIVE</code>, <code>CANCELLED</code>, <code>COMPLETED</code>.
 </p>
 
 {% if summary %}
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-3">
     <div class="col-md-3">
         <div class="card p-3 text-center bg-light h-100">
-            <h5 class="card-title text-muted">Активных бронирований</h5>
+            <h5 class="card-title text-muted">Всего записей</h5>
             <p class="display-6 fw-bold mb-0">{{ summary.total_bookings }}</p>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card p-3 text-center bg-light h-100">
-            <h5 class="card-title text-muted">Суммарная выручка</h5>
-            <p class="display-6 fw-bold mb-0">{{ summary.total_revenue|default:0 }} руб.</p>
+            <h5 class="card-title text-muted">Активных бронирований</h5>
+            <p class="display-6 fw-bold text-success mb-0">{{ summary.active_bookings }}</p>
         </div>
     </div>
     <div class="col-md-3">
+        <div class="card p-3 text-center bg-light h-100">
+            <h5 class="card-title text-muted">Отменённых</h5>
+            <p class="display-6 fw-bold text-secondary mb-0">{{ summary.cancelled_bookings }}</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center bg-light h-100">
+            <h5 class="card-title text-muted">Завершённых</h5>
+            <p class="display-6 fw-bold text-info mb-0">{{ summary.completed_bookings }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card p-3 text-center bg-light h-100">
+            <h5 class="card-title text-muted">Суммарная выручка (активные)</h5>
+            <p class="h3 fw-bold mb-0">{{ summary.total_revenue|default:0 }} руб.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
         <div class="card p-3 text-center bg-light h-100">
             <h5 class="card-title text-muted">Средняя стоимость</h5>
-            <p class="display-6 fw-bold mb-0">{{ summary.avg_cost|floatformat:2|default:0 }} руб.</p>
+            <p class="h3 fw-bold mb-0">{{ summary.avg_cost|floatformat:2|default:0 }} руб.</p>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="card p-3 text-center bg-light h-100">
             <h5 class="card-title text-muted">Мин. / Макс. заявка</h5>
-            <p class="h4 fw-bold mb-0 mt-2">
+            <p class="h4 fw-bold mb-0 mt-1">
                 {{ summary.min_cost|default:0 }} / {{ summary.max_cost|default:0 }} руб.
             </p>
         </div>

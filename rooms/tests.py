@@ -55,7 +55,7 @@ class RoomsViewsTests(TestCase):
             booking_date=date(2026, 9, 20),
             duration_hours=2.0,
             cost=5000.0,
-            is_cancelled=False,
+            status=Booking.Status.ACTIVE,
         )
 
     def test_rooms_list_view_and_search(self):

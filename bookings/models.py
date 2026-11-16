@@ -5,7 +5,30 @@ from rooms.models import Room
 from users.models import User
 
 
+class BookingQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(status=self.model.Status.ACTIVE)
+
+    def cancelled(self):
+        return self.filter(status=self.model.Status.CANCELLED)
+
+    def completed(self):
+        return self.filter(status=self.model.Status.COMPLETED)
+
+    def for_date(self, selected_date):
+        return self.filter(booking_date=selected_date)
+
+
+class BookingManager(models.Manager.from_queryset(BookingQuerySet)):
+    pass
+
+
 class Booking(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Активно"
+        CANCELLED = "cancelled", "Отменено"
+        COMPLETED = "completed", "Завершено"
+
     room = models.ForeignKey(
         Room,
         on_delete=models.PROTECT,
@@ -31,9 +54,11 @@ class Booking(models.Model):
         validators=[MinValueValidator(0.0)],
         verbose_name="Стоимость",
     )
-    is_cancelled = models.BooleanField(
-        default=False,
-        verbose_name="Бронирование отменено",
+    status = models.CharField(
+        max_length=12,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+        verbose_name="Статус бронирования",
     )
     notes = models.TextField(
         blank=True,
@@ -41,13 +66,11 @@ class Booking(models.Model):
         verbose_name="Примечание",
     )
 
-    def cancel(self) -> None:
-        self.is_cancelled = True
-        self.save(update_fields=["is_cancelled"])
+    objects = BookingManager()
 
-    @property
-    def status(self) -> str:
-        return "Отменено" if self.is_cancelled else "Активно"
+    def cancel(self) -> None:
+        self.status = self.Status.CANCELLED
+        self.save(update_fields=["status"])
 
     def __str__(self) -> str:
         return f"{self.room} — {self.booking_date} ({self.user})"

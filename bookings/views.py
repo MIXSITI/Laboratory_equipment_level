@@ -18,7 +18,7 @@ def booking_list(request):
     sort = request.GET.get("sort", "date").strip()
     error = None
 
-    bookings_data = Booking.objects.filter(is_cancelled=False)
+    bookings_data = Booking.objects.active()
 
     if booking_date:
         try:
@@ -29,9 +29,7 @@ def booking_list(request):
         except ValueError:
             error = "Укажите корректную дату."
         else:
-            bookings_data = bookings_data.filter(
-                booking_date=selected_date,
-            )
+            bookings_data = bookings_data.for_date(selected_date)
 
     if room_id.isdigit():
         bookings_data = bookings_data.filter(room_id=int(room_id))
@@ -71,7 +69,7 @@ def booking_list(request):
         "user_name",
         "user_role",
         "cost",
-        "is_cancelled",
+        "status",
     )
 
     paginator = Paginator(bookings_data, 5)
@@ -115,11 +113,11 @@ def statistics(request):
         .annotate(
             bookings_count=Count(
                 "bookings",
-                filter=Q(bookings__is_cancelled=False),
+                filter=Q(bookings__status=Booking.Status.ACTIVE),
             ),
             room_revenue=Sum(
                 "bookings__cost",
-                filter=Q(bookings__is_cancelled=False),
+                filter=Q(bookings__status=Booking.Status.ACTIVE),
             ),
             room_name=F("name"),
             room_id=F("id"),
@@ -133,12 +131,36 @@ def statistics(request):
         .order_by("-bookings_count", "name")
     )
 
-    summary = Booking.objects.filter(is_cancelled=False).aggregate(
+    summary = Booking.objects.aggregate(
         total_bookings=Count("id"),
-        total_revenue=Sum("cost"),
-        avg_cost=Avg("cost"),
-        min_cost=Min("cost"),
-        max_cost=Max("cost"),
+        active_bookings=Count(
+            "id",
+            filter=Q(status=Booking.Status.ACTIVE),
+        ),
+        cancelled_bookings=Count(
+            "id",
+            filter=Q(status=Booking.Status.CANCELLED),
+        ),
+        completed_bookings=Count(
+            "id",
+            filter=Q(status=Booking.Status.COMPLETED),
+        ),
+        total_revenue=Sum(
+            "cost",
+            filter=Q(status=Booking.Status.ACTIVE),
+        ),
+        avg_cost=Avg(
+            "cost",
+            filter=Q(status=Booking.Status.ACTIVE),
+        ),
+        min_cost=Min(
+            "cost",
+            filter=Q(status=Booking.Status.ACTIVE),
+        ),
+        max_cost=Max(
+            "cost",
+            filter=Q(status=Booking.Status.ACTIVE),
+        ),
     )
 
     return render(

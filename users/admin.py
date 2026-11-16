@@ -7,7 +7,7 @@ from .models import User
 
 class UserBookingInline(admin.TabularInline):
     model = Booking
-    fields = ("room", "booking_date", "is_cancelled")
+    fields = ("room", "booking_date", "status")
     extra = 0
     can_delete = False
 

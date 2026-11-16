@@ -35,7 +35,7 @@ class BookingsViewsTests(TestCase):
                 booking_date=date(2026, 9, day),
                 duration_hours=2.0,
                 cost=1200.0,
-                is_cancelled=False,
+                status=Booking.Status.ACTIVE,
             )
 
     def test_bookings_list_view_and_pagination(self):
@@ -70,5 +70,5 @@ class BookingsViewsTests(TestCase):
         booking = Booking.objects.get(pk=1)
         booking.cancel()
         booking.refresh_from_db()
-        self.assertTrue(booking.is_cancelled)
-        self.assertEqual(booking.status, "Отменено")
+        self.assertEqual(booking.status, Booking.Status.CANCELLED)
+        self.assertEqual(booking.get_status_display(), "Отменено")

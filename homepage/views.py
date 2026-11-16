@@ -12,7 +12,7 @@ def index(request):
     )
     recent_bookings = (
         Booking.objects
-        .filter(is_cancelled=False)
+        .active()
         .select_related("room", "user")
         .order_by("booking_date", "pk")[:3]
     )

@@ -1,5 +1,6 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Case, Value, When
 
 
 class Room(models.Model):
@@ -14,6 +15,16 @@ class Room(models.Model):
             "Укажите максимальное количество человек, которое может "
             "находиться в помещении."
         ),
+    )
+    is_large = models.GeneratedField(
+        expression=Case(
+            When(capacity__gte=50, then=Value(True)),
+            default=Value(False),
+            output_field=models.BooleanField(),
+        ),
+        output_field=models.BooleanField(),
+        db_persist=True,
+        verbose_name="Большое помещение",
     )
     inventory_number = models.CharField(
         max_length=50,

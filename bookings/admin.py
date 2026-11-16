@@ -13,11 +13,11 @@ class BookingAdmin(admin.ModelAdmin):
         "booking_date",
         "duration_hours",
         "cost",
-        "is_cancelled",
+        "status",
     )
     list_display_links = ("id",)
     search_fields = ("room__name", "user__name", "notes")
-    list_filter = ("booking_date", "is_cancelled", "room", "user")
+    list_filter = ("booking_date", "status", "room", "user")
     ordering = ("-booking_date",)
     list_per_page = 20
     readonly_fields = ("id",)
@@ -44,7 +44,7 @@ class BookingAdmin(admin.ModelAdmin):
 
     @admin.action(description="Вернуть в активные")
     def restore_bookings(self, request, queryset):
-        updated = queryset.update(is_cancelled=False)
+        updated = queryset.update(status=Booking.Status.ACTIVE)
         self.message_user(
             request,
             f"Возвращено бронирований: {updated}.",

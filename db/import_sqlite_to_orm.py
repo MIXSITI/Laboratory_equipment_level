@@ -101,6 +101,11 @@ def main() -> None:
 
             for row in bookings:
                 booking_date = date.fromisoformat(row["booking_date"])
+                status = (
+                    Booking.Status.CANCELLED
+                    if bool(row["is_cancelled"])
+                    else Booking.Status.ACTIVE
+                )
                 Booking.objects.update_or_create(
                     pk=row["id"],
                     defaults={
@@ -109,7 +114,7 @@ def main() -> None:
                         "booking_date": booking_date,
                         "duration_hours": row["duration_hours"],
                         "cost": row["cost"],
-                        "is_cancelled": bool(row["is_cancelled"]),
+                        "status": status,
                     },
                 )
 

@@ -47,11 +47,13 @@ def equipment_list(request):
 
 def equipment_detail(request, equipment_id: int):
     item = get_object_or_404(Room, pk=equipment_id)
-    is_booked_today = Booking.objects.filter(
-        room=item,
-        booking_date=date.today(),
-        is_cancelled=False,
-    ).exists()
+    is_booked_today = (
+        Booking.objects
+        .active()
+        .for_date(date.today())
+        .filter(room=item)
+        .exists()
+    )
     available = item.is_ready and not is_booked_today
     context = {
         "item": item,
