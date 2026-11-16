@@ -11,13 +11,17 @@
             {{ room.name }}
         </h1>
         <p class="card-text">
-            <strong>ID:</strong> {{ room.id }}
+            <strong>ID:</strong> {{ room.id }} |
+            <strong>Slug:</strong> <code>{{ room.slug }}</code>
         </p>
         <p class="card-text">
             <strong>Инвентарный номер:</strong> {{ room.inventory_number|default:"—" }}
         </p>
         <p class="card-text">
             <strong>Вместимость:</strong> {{ room.capacity }} мест
+            {% if room.is_large %}
+                <span class="badge bg-primary ms-1">Большое помещение</span>
+            {% endif %}
         </p>
         <p class="card-text">
             <strong>Требуемый уровень допуска:</strong> Уровень {{ room.required_level }}

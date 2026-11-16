@@ -12,7 +12,7 @@
         </h1>
         <p class="card-text">
             <strong>Помещение / Оборудование:</strong>
-            <a href="{% url 'rooms:detail' booking.room.id %}">{{ booking.room.name }}</a>
+            <a href="{{ booking.room.get_absolute_url }}">{{ booking.room.name }}</a>
             {% if booking.room.inventory_number %}
                 ({{ booking.room.inventory_number }})
             {% endif %}

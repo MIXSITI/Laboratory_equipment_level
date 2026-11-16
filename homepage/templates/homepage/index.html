@@ -23,7 +23,7 @@
         <ul class="list-group">
         {% for room in featured_rooms %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
-                <a href="{% url 'rooms:detail' room.id %}">{{ room.name }}</a>
+                <a href="{{ room.get_absolute_url }}">{{ room.name }}</a>
                 <span class="badge bg-success">{{ room.hourly_rate }} руб/ч</span>
             </li>
         {% empty %}

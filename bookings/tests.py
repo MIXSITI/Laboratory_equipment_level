@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.contrib.auth import get_user_model
 from django.db.models import ProtectedError
 from django.test import TestCase, override_settings
 
@@ -37,6 +38,34 @@ class BookingsViewsTests(TestCase):
                 cost=1200.0,
                 status=Booking.Status.ACTIVE,
             )
+        Booking.objects.create(
+            pk=7,
+            room=cls.room,
+            user=cls.user,
+            booking_date=date(2026, 9, 10),
+            duration_hours=1.0,
+            cost=600.0,
+            status=Booking.Status.CANCELLED,
+        )
+        Booking.objects.create(
+            pk=8,
+            room=cls.room,
+            user=cls.user,
+            booking_date=date(2026, 8, 15),
+            duration_hours=2.0,
+            cost=1200.0,
+            status=Booking.Status.COMPLETED,
+        )
+
+    def test_booking_queryset_and_manager_methods(self):
+        self.assertEqual(Booking.objects.count(), 8)
+        self.assertEqual(Booking.objects.active().count(), 6)
+        self.assertEqual(Booking.objects.cancelled().count(), 1)
+        self.assertEqual(Booking.objects.completed().count(), 1)
+        self.assertEqual(
+            Booking.objects.for_date(date(2026, 9, 1)).count(),
+            1,
+        )
 
     def test_bookings_list_view_and_pagination(self):
         response = self.client.get("/bookings/?room=1&sort=date")
@@ -52,6 +81,7 @@ class BookingsViewsTests(TestCase):
         response = self.client.get("/bookings/1/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Бронирование №1")
+        self.assertContains(response, self.room.get_absolute_url())
 
     @override_settings(DEBUG=False)
     def test_booking_detail_view_not_found(self):
@@ -72,3 +102,52 @@ class BookingsViewsTests(TestCase):
         booking.refresh_from_db()
         self.assertEqual(booking.status, Booking.Status.CANCELLED)
         self.assertEqual(booking.get_status_display(), "Отменено")
+
+    def test_django_admin_pages_and_actions(self):
+        auth_user_model = get_user_model()
+        admin_user = auth_user_model.objects.create_superuser(
+            username="test_admin",
+            email="admin@example.com",
+            password="StrongPassword123!",
+        )
+        self.client.force_login(admin_user)
+
+        for admin_url in (
+            "/admin/",
+            "/admin/rooms/room/",
+            "/admin/rooms/room/1/change/",
+            "/admin/users/user/",
+            "/admin/users/user/1/change/",
+            "/admin/bookings/booking/",
+            "/admin/bookings/booking/1/change/",
+        ):
+            res = self.client.get(admin_url)
+            self.assertEqual(res.status_code, 200)
+
+        res_cancel = self.client.post(
+            "/admin/bookings/booking/",
+            {
+                "action": "cancel_bookings",
+                "_selected_action": ["2", "3"],
+            },
+            follow=True,
+        )
+        self.assertEqual(res_cancel.status_code, 200)
+        self.assertEqual(
+            Booking.objects.get(pk=2).status,
+            Booking.Status.CANCELLED,
+        )
+
+        res_restore = self.client.post(
+            "/admin/bookings/booking/",
+            {
+                "action": "restore_bookings",
+                "_selected_action": ["2"],
+            },
+            follow=True,
+        )
+        self.assertEqual(res_restore.status_code, 200)
+        self.assertEqual(
+            Booking.objects.get(pk=2).status,
+            Booking.Status.ACTIVE,
+        )

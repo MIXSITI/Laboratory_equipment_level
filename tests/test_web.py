@@ -2,6 +2,8 @@ import pytest
 from django.core.management import call_command
 from django.test import Client, override_settings
 
+from rooms.models import Room
+
 pytestmark = pytest.mark.django_db
 
 
@@ -10,13 +12,14 @@ def load_initial_fixture():
     call_command("loaddata", "data/fixtures/initial_data.json", verbosity=0)
 
 
-def test_homepage_view():
+def test_homepage_view_and_context_processor():
     client = Client()
     response = client.get("/")
     body = response.content.decode("utf-8")
     assert response.status_code == 200
     assert "Лабораторное оборудование" in body
     assert "Спектрофотометр UV-1800" in body
+    assert "Помещения (4)" in body
 
 
 @override_settings(DEBUG=False)
@@ -52,7 +55,7 @@ def test_equipment_views_and_orm_search():
 
 
 @override_settings(DEBUG=False)
-def test_rooms_views_compat_and_search():
+def test_rooms_views_slug_and_search():
     client = Client()
     response = client.get("/rooms/")
     assert response.status_code == 200
@@ -62,11 +65,16 @@ def test_rooms_views_compat_and_search():
     assert res_query.status_code == 200
     assert "Спектрофотометр UV-1800" in body_query
 
-    response_detail = client.get("/rooms/1/")
-    assert response_detail.status_code == 200
-    assert "EQ-301" in response_detail.content.decode("utf-8")
+    room = Room.objects.get(pk=1)
+    response_slug = client.get(room.get_absolute_url())
+    assert response_slug.status_code == 200
+    assert "EQ-301" in response_slug.content.decode("utf-8")
 
-    response_404 = client.get("/rooms/999/")
+    response_id = client.get("/rooms/1/", follow=True)
+    assert response_id.status_code == 200
+    assert "EQ-301" in response_id.content.decode("utf-8")
+
+    response_404 = client.get("/rooms/nonexistent-room-slug/")
     assert response_404.status_code == 404
 
 
@@ -83,6 +91,13 @@ def test_available_rooms_view():
     assert "Спектрофотометр UV-1800" in body
     assert "Сканирующий электронный микроскоп" not in body
     assert "3D-принтер Ultimaker S3" not in body
+
+    response_completed = client.get("/rooms/available/?date=2026-08-10")
+    assert response_completed.status_code == 200
+    assert (
+        "Осциллограф DSO-X 2024A"
+        in response_completed.content.decode("utf-8")
+    )
 
     response_invalid = client.get("/rooms/available/?date=invalid")
     assert response_invalid.status_code == 200
@@ -116,6 +131,7 @@ def test_statistics_view():
     assert "Статистика бронирований" in body
     assert "Количество бронирований по помещениям" in body
     assert "Активных бронирований" in body
+    assert "Завершённых" in body
     assert "Django ORM" in body
 
 

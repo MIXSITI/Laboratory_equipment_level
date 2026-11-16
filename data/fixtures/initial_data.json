@@ -4,6 +4,7 @@
   "pk": 1,
   "fields": {
     "name": "Спектрофотометр UV-1800",
+    "slug": "spektrofotometr-uv-1800-1",
     "capacity": 30,
     "is_large": false,
     "inventory_number": "EQ-301",
@@ -18,6 +19,7 @@
   "pk": 2,
   "fields": {
     "name": "Сканирующий электронный микроскоп",
+    "slug": "skaniruiushchii-elektronnyi-mikroskop-2",
     "capacity": 60,
     "is_large": true,
     "inventory_number": "EQ-505",
@@ -32,6 +34,7 @@
   "pk": 3,
   "fields": {
     "name": "Осциллограф DSO-X 2024A",
+    "slug": "ostsillograf-dso-x-2024a-3",
     "capacity": 25,
     "is_large": false,
     "inventory_number": "EQ-110",
@@ -46,6 +49,7 @@
   "pk": 4,
   "fields": {
     "name": "3D-принтер Ultimaker S3",
+    "slug": "3d-printer-ultimaker-s3-4",
     "capacity": 15,
     "is_large": false,
     "inventory_number": "EQ-220",
@@ -216,6 +220,19 @@
     "cost": 3750.0,
     "status": "active",
     "notes": null
+  }
+},
+{
+  "model": "bookings.booking",
+  "pk": 11,
+  "fields": {
+    "room": 3,
+    "user": 1,
+    "booking_date": "2026-08-10",
+    "duration_hours": 2.0,
+    "cost": 1700.0,
+    "status": "completed",
+    "notes": "Лабораторная работа успешно завершена"
   }
 }
 ]

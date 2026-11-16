@@ -48,7 +48,7 @@
                         Ставка: {{ room.hourly_rate }} руб/час
                     </p>
                 {% endif %}
-                <a href="{% url 'rooms:detail' room.id %}" class="btn btn-sm btn-primary">
+                <a href="{{ room.get_absolute_url }}" class="btn btn-sm btn-primary">
                     Подробнее
                 </a>
             </div>

@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.db.models import Count, Q
+from django.utils.html import format_html
 
 from bookings.models import Booking
 
@@ -26,6 +27,7 @@ class RoomAdmin(admin.ModelAdmin):
         "operational",
         "under_maintenance",
         "active_bookings_count",
+        "site_link",
     )
     list_display_links = ("name",)
     list_editable = ("capacity",)
@@ -39,8 +41,9 @@ class RoomAdmin(admin.ModelAdmin):
     )
     ordering = ("name",)
     list_per_page = 20
-    readonly_fields = ("id", "is_large")
+    readonly_fields = ("id", "slug", "is_large")
     inlines = (BookingInline,)
+    view_on_site = True
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -57,3 +60,10 @@ class RoomAdmin(admin.ModelAdmin):
     )
     def active_bookings_count(self, obj):
         return obj.active_bookings
+
+    @admin.display(description="Страница на сайте")
+    def site_link(self, obj):
+        return format_html(
+            '<a href="{}" target="_blank">Открыть</a>',
+            obj.get_absolute_url(),
+        )

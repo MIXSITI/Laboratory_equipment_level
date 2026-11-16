@@ -1,7 +1,7 @@
 from datetime import date, datetime
 
 from django.db.models import Q
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from bookings.models import Booking
 from rooms.models import Room
@@ -43,8 +43,8 @@ def rooms(request):
     )
 
 
-def room_detail(request, room_id: int):
-    room = get_object_or_404(Room, pk=room_id)
+def room_detail(request, slug: str):
+    room = get_object_or_404(Room, slug=slug)
     room_bookings = (
         room.bookings
         .active()
@@ -68,6 +68,11 @@ def room_detail(request, room_id: int):
         "rooms/room_detail.html",
         context,
     )
+
+
+def room_detail_by_id(request, room_id: int):
+    room = get_object_or_404(Room, pk=room_id)
+    return redirect(room.get_absolute_url())
 
 
 def available_rooms(request):

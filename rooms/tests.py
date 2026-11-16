@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.test import TestCase, override_settings
+from django.urls import reverse
 
 from bookings.models import Booking
 from rooms.models import Room
@@ -57,25 +58,59 @@ class RoomsViewsTests(TestCase):
             cost=5000.0,
             status=Booking.Status.ACTIVE,
         )
+        Booking.objects.create(
+            room=cls.room_ready,
+            user=cls.user,
+            booking_date=date(2026, 9, 20),
+            duration_hours=1.5,
+            cost=900.0,
+            status=Booking.Status.COMPLETED,
+        )
 
-    def test_rooms_list_view_and_search(self):
-        response = self.client.get("/rooms/")
+    def test_rooms_list_view_search_and_context_processor(self):
+        response = self.client.get(reverse("rooms:list"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Спектрофотометр UV-1800")
+        self.assertEqual(response.context["site_name"], "Roomly")
+        self.assertEqual(response.context["rooms_count"], 3)
+        self.assertContains(response, "Помещения (3)")
 
         res_search = self.client.get("/rooms/?q=спектрофотометр")
         self.assertEqual(res_search.status_code, 200)
         self.assertContains(res_search, "Спектрофотометр UV-1800")
         self.assertNotContains(res_search, "Ultimaker S3")
 
-    def test_room_detail_view_existing(self):
-        response = self.client.get("/rooms/1/")
+    def test_room_slug_get_absolute_url_and_id_redirect(self):
+        self.assertEqual(self.room_ready.slug, "spektrofotometr-uv-1800-1")
+        expected_url = "/rooms/spektrofotometr-uv-1800-1/"
+        self.assertEqual(self.room_ready.get_absolute_url(), expected_url)
+
+        response = self.client.get(expected_url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "EQ-301")
 
+        redirect_response = self.client.get("/rooms/1/")
+        self.assertEqual(redirect_response.status_code, 302)
+        self.assertEqual(redirect_response.url, expected_url)
+
+    def test_generated_field_is_large(self):
+        self.room_ready.refresh_from_db()
+        self.room_booked.refresh_from_db()
+        self.assertFalse(self.room_ready.is_large)
+        self.assertTrue(self.room_booked.is_large)
+
+        temp_room = Room.objects.create(name="Аудитория 401", capacity=30)
+        temp_room.refresh_from_db()
+        self.assertFalse(temp_room.is_large)
+
+        temp_room.capacity = 55
+        temp_room.save()
+        temp_room.refresh_from_db()
+        self.assertTrue(temp_room.is_large)
+
     @override_settings(DEBUG=False)
     def test_room_detail_view_not_found(self):
-        response = self.client.get("/rooms/999/")
+        response = self.client.get("/rooms/nonexistent-slug-999/")
         self.assertEqual(response.status_code, 404)
         self.assertContains(
             response,
@@ -83,7 +118,7 @@ class RoomsViewsTests(TestCase):
             status_code=404,
         )
 
-    def test_available_rooms_excludes_booked_and_maintenance(self):
+    def test_available_rooms_excludes_active_and_allows_completed(self):
         response = self.client.get("/rooms/available/?date=2026-09-20")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Спектрофотометр UV-1800")

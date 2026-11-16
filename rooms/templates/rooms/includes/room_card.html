@@ -19,7 +19,7 @@
             <strong>Ставка:</strong> {{ room.hourly_rate }} руб/час
         </p>
         <a
-            href="{% url 'rooms:detail' room.id %}"
+            href="{{ room.get_absolute_url }}"
             class="btn btn-primary btn-sm mt-2"
         >
             Подробнее

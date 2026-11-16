@@ -1,12 +1,21 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Case, Value, When
+from django.urls import reverse
+from django.utils.text import slugify
+from unidecode import unidecode
 
 
 class Room(models.Model):
     name = models.CharField(
         max_length=200,
         verbose_name="Название помещения / оборудования",
+    )
+    slug = models.SlugField(
+        max_length=180,
+        unique=True,
+        editable=False,
+        verbose_name="URL-идентификатор",
     )
     capacity = models.PositiveIntegerField(
         default=1,
@@ -50,6 +59,25 @@ class Room(models.Model):
         validators=[MinValueValidator(0.0)],
         verbose_name="Почасовая ставка",
     )
+
+    def save(self, *args, **kwargs) -> None:
+        if not self.slug:
+            transliterated_name = unidecode(self.name)
+            base_slug = slugify(transliterated_name) or "room"
+            if self.pk:
+                self.slug = f"{base_slug}-{self.pk}"
+            else:
+                super().save(*args, **kwargs)
+                self.slug = f"{base_slug}-{self.pk}"
+                super().save(update_fields=["slug"])
+                return
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self) -> str:
+        return reverse(
+            "rooms:detail",
+            kwargs={"slug": self.slug},
+        )
 
     @property
     def is_ready(self) -> bool:
