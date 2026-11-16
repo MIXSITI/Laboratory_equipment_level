@@ -10,6 +10,10 @@ class Room(models.Model):
     capacity = models.PositiveIntegerField(
         default=1,
         verbose_name="Вместимость",
+        help_text=(
+            "Укажите максимальное количество человек, которое может "
+            "находиться в помещении."
+        ),
     )
     inventory_number = models.CharField(
         max_length=50,
