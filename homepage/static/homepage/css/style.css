@@ -58,3 +58,15 @@ body {
     margin: 4px 0 0;
     font-size: 0.875rem;
 }
+
+.room-detail-image {
+    max-width: 480px;
+    max-height: 320px;
+    object-fit: cover;
+}
+
+.room-card-image {
+    max-width: 240px;
+    max-height: 160px;
+    object-fit: cover;
+}

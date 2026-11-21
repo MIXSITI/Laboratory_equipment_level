@@ -9,13 +9,15 @@ Roomly – сквозное учебное веб-приложение для у
 - открывать карточки помещений по человекочитаемому транслитерированному URL (`<slug:slug>`, `get_absolute_url()`) и определять крупные помещения через вычисляемое базой данных поле `GeneratedField` (`is_large`);
 - централизованно выводить общие данные сайта и счётчик ресурсов через контекстный процессор `rooms.context_processors.room_context`;
 - работать с тремя статусами бронирования через `Booking.Status(TextChoices)` (`ACTIVE`, `CANCELLED`, `COMPLETED`) и методы пользовательского менеджера `Booking.objects.active()`, `.cancelled()`, `.completed()`, `.for_date()`;
-- искать свободные и исправные ресурсы на дату, фильтровать, сортировать и просматривать постранично список бронирований, а также анализировать статистику и SQL-запросы через **Django Debug Toolbar**.
+- искать свободные и исправные ресурсы на дату, фильтровать, сортировать и просматривать постранично список бронирований, а также анализировать статистику и SQL-запросы через **Django Debug Toolbar**;
+- фильтровать бронирования через форму `BookingFilterForm` (`forms.Form`), создавать и редактировать бронирования через `BookingForm` (`forms.ModelForm`), отменять активные бронирования защищённым POST-запросом и загружать изображения помещений через `RoomForm` (`enctype="multipart/form-data"`).
 
-Проект развивался поэтапно: консольное ООП-приложение с JSON-хранилищем (ПР1–ПР3) -> базовый веб-интерфейс Django (ПР5) -> система шаблонов DTL и статика (ПР6) -> реляционная БД SQLite и SQL-запросы (ПР7) -> модели, миграции и запросы Django ORM (ПР9) -> Django Admin, `TextChoices`, пользовательский менеджер `QuerySet`, `GeneratedField`, `slug` и контекстный процессор (ПР10).
+Проект развивался поэтапно: консольное ООП-приложение с JSON-хранилищем (ПР1–ПР3) -> базовый веб-интерфейс Django (ПР5) -> система шаблонов DTL и статика (ПР6) -> реляционная БД SQLite и SQL-запросы (ПР7) -> модели, миграции и запросы Django ORM (ПР9) -> Django Admin, `TextChoices`, пользовательский менеджер `QuerySet`, `GeneratedField`, `slug` и контекстный процессор (ПР10) -> формы Django (`Form`, `ModelForm`), серверная валидация, CSRF-защита и загрузка изображений (ПР11).
 
 ## 2. Используемые технологии
 - Python 3.11+;
-- Django 5.2 (MTV, Django ORM, `GeneratedField`, `TextChoices`, миграции схемы и данных `RunPython`, фикстуры, Django Admin);
+- Django 5.2 (MTV, Django ORM, Django Forms, `GeneratedField`, `TextChoices`, миграции схемы и данных `RunPython`, фикстуры, Django Admin);
+- Pillow (обработка и проверка загружаемых изображений `ImageField`);
 - Unidecode (транслитерация кириллицы для автогенерации `slug`);
 - Django Debug Toolbar (инспекция и оптимизация SQL-запросов в режиме отладки);
 - SQLite 3 (`db.sqlite3` – целевая база Django ORM; `data/roomly.sqlite` – исходная база ПР7);
@@ -31,6 +33,7 @@ Roomly – сквозное учебное веб-приложение для у
   - `is_large` (`GeneratedField`, `db_persist=True`) – признак большого помещения (`capacity >= 50`), вычисляемый на стороне СУБД;
   - `inventory_number` (`CharField`, `blank=True`, `default=""`) – инвентарный номер;
   - `operational` (`BooleanField`, `default=True`), `under_maintenance` (`BooleanField`, `default=False`), `required_level` (`1..3`), `hourly_rate` (`FloatField`);
+  - `image` (`ImageField`, `upload_to="rooms/"`, `blank=True`, `null=True`) – фотография помещения или прибора (хранится в `MEDIA_ROOT`);
   - методы `get_absolute_url()`, `check_readiness()`, `is_suitable_for()`, `is_suitable_for_level()`, свойство `is_ready`.
 - **`User` (`users/models.py`)** – пользователи предметной области лаборатории:
   - `name` (`CharField`), `email` (`EmailField`), `role` (`CharField`, `choices`: `студент` / `сотрудник`), `access_level` (`1..3`), `briefing_passed` (`BooleanField`);
@@ -51,13 +54,22 @@ Roomly – сквозное учебное веб-приложение для у
 ## 5. Основные веб-страницы и маршруты
 - `/` – главная страница с топ-3 готовых ресурсов и ближайших активных заявок (срез `QuerySet [:3]`, `select_related`);
 - `/rooms/` и `/equipment/` – каталоги ресурсов с регистронезависимым поиском (`Q(name__icontains=q) | Q(inventory_number__icontains=q)`, а в `/rooms/` также по числовой вместимости), фильтрами и динамической сортировкой (`sort=name|capacity`, `direction=asc|desc`);
-- `/rooms/<slug:slug>/` – детальная карточка помещения по `slug` (`get_object_or_404`, `get_absolute_url()`, редирект со старых `/rooms/<int:room_id>/`);
+- `/rooms/create/` и `/rooms/<slug:slug>/edit/` – создание и редактирование помещений/оборудования через `RoomForm` (`ModelForm` + `MinimumCapacityValidator`) с загрузкой изображений (`enctype="multipart/form-data"`, `request.FILES`);
+- `/rooms/<slug:slug>/` – детальная карточка помещения по `slug` (`get_object_or_404`, `get_absolute_url()`, редирект со старых `/rooms/<int:room_id>/`), включая вывод загруженного изображения;
 - `/equipment/<int:equipment_id>/` – детальная карточка лабораторного прибора;
 - `/rooms/available/` – поиск свободных и исправных ресурсов на дату (учитываются только брони со статусом `ACTIVE`);
-- `/bookings/` – список бронирований с фильтрацией по статусу (`active|cancelled|completed|all`), дате, ресурсу, пользователю и его роли, поиском по связанным полям, сортировкой (`sort_fields`), `annotate(F(...))`, `values(...)` и `Paginator` с `{% querystring %}`;
+- `/bookings/` – список бронирований с фильтрацией через `BookingFilterForm` (`GET`), валидацией параметров через `is_valid()`/`cleaned_data`, сортировкой (`sort_fields`), `annotate(F(...))`, `values(...)` и `Paginator` с `{% querystring %}`;
+- `/bookings/create/` – создание нового бронирования через `BookingForm` (`ModelForm`) с проверкой даты (`clean_booking_date`), готовности ресурса (`clean()`), длительности (`validate_positive_duration`), занятости помещения (`Booking.objects.active().filter(...).exists()`) и расчётом стоимости через `save(commit=False)`;
+- `/bookings/<int:booking_id>/edit/` – редактирование активного бронирования (`instance=booking`, исключение текущей записи `.exclude(pk=booking.pk)`);
+- `/bookings/<int:booking_id>/cancel/` – отмена активного бронирования через `@require_POST` + `{% csrf_token %}` (вызов `booking.cancel()` без удаления записи из БД);
 - `/bookings/<int:booking_id>/` – детальная карточка бронирования (`select_related("room", "user")`);
 - `/bookings/statistics/` – аналитическая сводка по всем статусам (`ACTIVE`, `CANCELLED`, `COMPLETED`) и выручке;
 - `/admin/` – административная панель Django.
+
+## 5.1. Формы Django и валидация (ПР11)
+- **`BookingFilterForm` (`bookings/forms.py`)** – форма фильтрации списка бронирований на базе `forms.Form` (GET-параметры `search`, `date`, `status`, `room`, `user`, `role`, `sort`).
+- **`BookingForm` (`bookings/forms.py`)** – `ModelForm` для создания и редактирования заявок на базе `Booking` с явным списком `fields`, виджетами Bootstrap (`DateInput(type="date")`, `Textarea`, `Select`, `NumberInput`), подсказками `help_texts`, валидатором `validate_positive_duration`, проверкой `clean_booking_date()` и межполевой проверкой `clean()`; служебные поля `status` и `cost` задаются на сервере.
+- **`RoomForm` (`rooms/forms.py`)** – `ModelForm` для модели `Room` с валидатором-классом `MinimumCapacityValidator`, очисткой названия `clean_name()`, проверкой ставки `clean_hourly_rate()` и загрузкой фотографий `ImageField` в `MEDIA_ROOT/rooms/`.
 
 ## 6. Установка и запуск проекта
 1. Клонировать репозиторий и перейти в каталог проекта:

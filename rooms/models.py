@@ -59,6 +59,12 @@ class Room(models.Model):
         validators=[MinValueValidator(0.0)],
         verbose_name="Почасовая ставка",
     )
+    image = models.ImageField(
+        upload_to="rooms/",
+        blank=True,
+        null=True,
+        verbose_name="Изображение",
+    )
 
     def _build_slug(self, base_slug: str) -> str:
         suffix = f"-{self.pk}"

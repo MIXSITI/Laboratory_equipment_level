@@ -10,6 +10,17 @@
         <h1 class="card-title h3">
             {{ item.name }}
         </h1>
+        {% if item.image %}
+            <div class="mb-3">
+                <img
+                    src="{{ item.image.url }}"
+                    alt="{{ item.name }}"
+                    class="img-fluid rounded room-detail-image"
+                >
+            </div>
+        {% else %}
+            <p class="text-muted">Изображение не загружено.</p>
+        {% endif %}
         <p class="card-text">
             <strong>ID:</strong> {{ item.id }}
         </p>

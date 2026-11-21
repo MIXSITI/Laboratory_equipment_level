@@ -1,11 +1,14 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import ProtectedError
 from django.test import TestCase, override_settings
+from django.urls import reverse
+from django.utils import timezone
 
+from bookings.forms import BookingFilterForm, BookingForm
 from bookings.models import Booking
 from rooms.models import Room
 from users.models import User
@@ -195,3 +198,262 @@ class BookingsViewsTests(TestCase):
 
         delete_res = self.client.get("/admin/rooms/room/1/delete/")
         self.assertEqual(delete_res.status_code, 403)
+
+
+class BookingFormsTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.room = Room.objects.create(
+            name="Спектрофотометр UV-1800",
+            inventory_number="EQ-301",
+            capacity=30,
+            operational=True,
+            under_maintenance=False,
+            hourly_rate=1200.0,
+        )
+        cls.other_room = Room.objects.create(
+            name="Осциллограф DSO-X 2024A",
+            inventory_number="EQ-110",
+            capacity=20,
+            operational=True,
+            under_maintenance=False,
+            hourly_rate=800.0,
+        )
+        cls.maintenance_room = Room.objects.create(
+            name="3D-принтер на ТО",
+            inventory_number="EQ-220",
+            capacity=10,
+            operational=True,
+            under_maintenance=True,
+            hourly_rate=600.0,
+        )
+        cls.user = User.objects.create(
+            name="Иванов Алексей Сергеевич",
+            email="ivanov@edu.mirea.ru",
+            role=User.ROLE_STUDENT,
+            access_level=2,
+            briefing_passed=True,
+        )
+
+    def test_booking_filter_form_validation(self):
+        unbound = BookingFilterForm(None)
+        self.assertFalse(unbound.is_bound)
+
+        invalid_room_res = self.client.get("/bookings/?room=999999")
+        self.assertEqual(invalid_room_res.status_code, 200)
+        self.assertContains(
+            invalid_room_res,
+            "Проверьте корректность параметров фильтрации.",
+        )
+
+        invalid_sort_res = self.client.get("/bookings/?sort=unknown")
+        self.assertEqual(invalid_sort_res.status_code, 200)
+        self.assertContains(
+            invalid_sort_res,
+            "Проверьте корректность параметров фильтрации.",
+        )
+
+        invalid_date_res = self.client.get("/bookings/?date=not-a-date")
+        self.assertEqual(invalid_date_res.status_code, 200)
+        self.assertContains(invalid_date_res, "Укажите корректную дату.")
+
+    def test_booking_create_get_initial_and_post_success(self):
+        today = timezone.localdate()
+        get_res = self.client.get(reverse("bookings:booking_create"))
+        self.assertEqual(get_res.status_code, 200)
+        self.assertContains(get_res, "csrfmiddlewaretoken")
+        self.assertEqual(
+            get_res.context["form"].initial["booking_date"],
+            today,
+        )
+
+        post_res = self.client.post(
+            reverse("bookings:booking_create"),
+            {
+                "room": self.room.pk,
+                "booking_date": (today + timedelta(days=2)).isoformat(),
+                "user": self.user.pk,
+                "duration_hours": "2.5",
+                "notes": "Измерение спектров",
+            },
+        )
+        self.assertRedirects(post_res, reverse("bookings:bookings"))
+        booking = Booking.objects.get()
+        self.assertEqual(booking.status, Booking.Status.ACTIVE)
+        self.assertEqual(booking.cost, 3000.0)
+        self.assertEqual(booking.notes, "Измерение спектров")
+
+    def test_booking_create_validation_and_availability(self):
+        today = timezone.localdate()
+        future_date = today + timedelta(days=3)
+
+        past_res = self.client.post(
+            reverse("bookings:booking_create"),
+            {
+                "room": self.room.pk,
+                "booking_date": (today - timedelta(days=1)).isoformat(),
+                "user": self.user.pk,
+                "duration_hours": "1.0",
+            },
+        )
+        self.assertEqual(past_res.status_code, 200)
+        self.assertContains(
+            past_res,
+            "Нельзя создать бронирование на прошедшую дату.",
+        )
+
+        bad_dur_res = self.client.post(
+            reverse("bookings:booking_create"),
+            {
+                "room": self.room.pk,
+                "booking_date": future_date.isoformat(),
+                "user": self.user.pk,
+                "duration_hours": "20",
+            },
+        )
+        self.assertEqual(bad_dur_res.status_code, 200)
+        self.assertContains(
+            bad_dur_res,
+            "Длительность бронирования не может превышать 12 часов.",
+        )
+
+        maint_res = self.client.post(
+            reverse("bookings:booking_create"),
+            {
+                "room": self.maintenance_room.pk,
+                "booking_date": future_date.isoformat(),
+                "user": self.user.pk,
+                "duration_hours": "1.0",
+            },
+        )
+        self.assertEqual(maint_res.status_code, 200)
+        self.assertContains(maint_res, "недоступен")
+
+        Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_date=future_date,
+            duration_hours=1.0,
+            cost=1200.0,
+            status=Booking.Status.ACTIVE,
+        )
+        conflict_res = self.client.post(
+            reverse("bookings:booking_create"),
+            {
+                "room": self.room.pk,
+                "booking_date": future_date.isoformat(),
+                "user": self.user.pk,
+                "duration_hours": "2.0",
+            },
+        )
+        self.assertEqual(conflict_res.status_code, 200)
+        self.assertContains(
+            conflict_res,
+            "Выбранное помещение уже забронировано на эту дату.",
+        )
+        self.assertEqual(Booking.objects.count(), 1)
+
+        cancelled_date = today + timedelta(days=4)
+        Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_date=cancelled_date,
+            duration_hours=1.0,
+            cost=1200.0,
+            status=Booking.Status.CANCELLED,
+        )
+        ok_after_cancel = self.client.post(
+            reverse("bookings:booking_create"),
+            {
+                "room": self.room.pk,
+                "booking_date": cancelled_date.isoformat(),
+                "user": self.user.pk,
+                "duration_hours": "1.5",
+            },
+        )
+        self.assertRedirects(ok_after_cancel, reverse("bookings:bookings"))
+        self.assertEqual(Booking.objects.active().count(), 2)
+
+    def test_booking_update_and_cancel(self):
+        today = timezone.localdate()
+        date_1 = today + timedelta(days=5)
+        date_2 = today + timedelta(days=6)
+        booking = Booking.objects.create(
+            room=self.room,
+            user=self.user,
+            booking_date=date_1,
+            duration_hours=1.0,
+            cost=1200.0,
+            status=Booking.Status.ACTIVE,
+        )
+        other_booking = Booking.objects.create(
+            room=self.other_room,
+            user=self.user,
+            booking_date=date_2,
+            duration_hours=1.0,
+            cost=800.0,
+            status=Booking.Status.ACTIVE,
+        )
+
+        self.assertIn("room", BookingForm.Meta.fields)
+        self.assertNotIn("status", BookingForm.Meta.fields)
+
+        edit_url = reverse("bookings:booking_update", args=[booking.pk])
+        get_edit = self.client.get(edit_url)
+        self.assertEqual(get_edit.status_code, 200)
+        self.assertContains(
+            get_edit,
+            f"Редактирование бронирования №{booking.pk}",
+        )
+
+        same_slot_res = self.client.post(
+            edit_url,
+            {
+                "room": self.room.pk,
+                "booking_date": date_1.isoformat(),
+                "user": self.user.pk,
+                "duration_hours": "3.0",
+                "notes": "Обновлённая длительность",
+            },
+        )
+        self.assertRedirects(same_slot_res, reverse("bookings:bookings"))
+        booking.refresh_from_db()
+        self.assertEqual(booking.cost, 3600.0)
+        self.assertEqual(booking.notes, "Обновлённая длительность")
+        self.assertEqual(Booking.objects.count(), 2)
+
+        conflict_edit = self.client.post(
+            edit_url,
+            {
+                "room": other_booking.room.pk,
+                "booking_date": date_2.isoformat(),
+                "user": self.user.pk,
+                "duration_hours": "1.0",
+            },
+        )
+        self.assertEqual(conflict_edit.status_code, 200)
+        self.assertContains(
+            conflict_edit,
+            "Выбранное помещение уже забронировано на эту дату.",
+        )
+
+        not_found_edit = self.client.get(
+            reverse("bookings:booking_update", args=[99999])
+        )
+        self.assertEqual(not_found_edit.status_code, 404)
+
+        cancel_url = reverse("bookings:booking_cancel", args=[booking.pk])
+        get_cancel = self.client.get(cancel_url)
+        self.assertEqual(get_cancel.status_code, 405)
+
+        post_cancel = self.client.post(cancel_url)
+        self.assertRedirects(post_cancel, reverse("bookings:bookings"))
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.CANCELLED)
+
+        repeat_cancel = self.client.post(cancel_url)
+        self.assertEqual(repeat_cancel.status_code, 404)
+
+        cancelled_edit = self.client.get(edit_url)
+        self.assertEqual(cancelled_edit.status_code, 404)

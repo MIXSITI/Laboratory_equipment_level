@@ -6,6 +6,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from bookings.models import Booking
 from rooms.models import Room
 
+from .forms import RoomForm
+
 
 def rooms(request):
     query = request.GET.get("q", "").strip()
@@ -92,6 +94,42 @@ def room_detail(request, slug: str):
 def room_detail_by_id(request, room_id: int):
     room = get_object_or_404(Room, pk=room_id)
     return redirect(room.get_absolute_url())
+
+
+def room_create(request):
+    if request.method == "POST":
+        form = RoomForm(request.POST, request.FILES)
+        if form.is_valid():
+            room = form.save()
+            return redirect(room.get_absolute_url())
+    else:
+        form = RoomForm()
+
+    return render(
+        request,
+        "rooms/room_form.html",
+        {"form": form},
+    )
+
+
+def room_update(request, slug: str):
+    room = get_object_or_404(Room, slug=slug)
+    if request.method == "POST":
+        form = RoomForm(request.POST, request.FILES, instance=room)
+        if form.is_valid():
+            room = form.save()
+            return redirect(room.get_absolute_url())
+    else:
+        form = RoomForm(instance=room)
+
+    return render(
+        request,
+        "rooms/room_form.html",
+        {
+            "form": form,
+            "room": room,
+        },
+    )
 
 
 def available_rooms(request):

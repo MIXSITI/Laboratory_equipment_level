@@ -1,7 +1,14 @@
+from datetime import timedelta
+from io import BytesIO
+
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import Client, override_settings
+from django.utils import timezone
+from PIL import Image
 
+from bookings.models import Booking
 from rooms.models import Room
 
 pytestmark = pytest.mark.django_db
@@ -177,3 +184,56 @@ def test_bookings_filter_sort_related_and_pagination():
     body_completed = res_completed.content.decode("utf-8")
     assert res_completed.status_code == 200
     assert "Бронирование №11:" in body_completed
+
+
+def test_pr11_booking_and_room_forms_workflow(tmp_path, settings):
+    settings.MEDIA_ROOT = tmp_path
+    client = Client()
+    future_date = (timezone.localdate() + timedelta(days=10)).isoformat()
+
+    create_booking_res = client.post(
+        "/bookings/create/",
+        {
+            "room": 1,
+            "booking_date": future_date,
+            "user": 1,
+            "duration_hours": "2.0",
+            "notes": "Тестовый запуск ПР11",
+        },
+        follow=True,
+    )
+    assert create_booking_res.status_code == 200
+    created = Booking.objects.get(booking_date=future_date, room_id=1)
+    assert created.cost == 2400.0
+
+    cancel_res = client.post(
+        f"/bookings/{created.pk}/cancel/",
+        follow=True,
+    )
+    assert cancel_res.status_code == 200
+    created.refresh_from_db()
+    assert created.status == Booking.Status.CANCELLED
+
+    buffer = BytesIO()
+    Image.new("RGB", (8, 8), color=(10, 200, 100)).save(buffer, format="PNG")
+    img_file = SimpleUploadedFile(
+        "equip.png",
+        buffer.getvalue(),
+        content_type="image/png",
+    )
+    room_res = client.post(
+        "/rooms/create/",
+        {
+            "name": "Хроматограф ГХ-1000",
+            "inventory_number": "EQ-888",
+            "capacity": "10",
+            "required_level": "1",
+            "hourly_rate": "950",
+            "operational": "on",
+            "image": img_file,
+        },
+        follow=True,
+    )
+    assert room_res.status_code == 200
+    room = Room.objects.get(inventory_number="EQ-888")
+    assert room.image.url in room_res.content.decode("utf-8")

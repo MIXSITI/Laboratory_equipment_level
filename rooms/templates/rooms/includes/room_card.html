@@ -1,5 +1,12 @@
 <article class="card room-card mb-3">
     <div class="card-body">
+        {% if room.image %}
+            <img
+                src="{{ room.image.url }}"
+                alt="{{ room.name }}"
+                class="img-fluid rounded mb-2 room-card-image"
+            >
+        {% endif %}
         <div class="d-flex justify-content-between align-items-start">
             <h2 class="card-title h4">
                 {{ room.name|default:"Без названия" }}

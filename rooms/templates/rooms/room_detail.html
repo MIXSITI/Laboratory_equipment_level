@@ -7,9 +7,28 @@
 {% block content %}
 <div class="card room-card mb-4">
     <div class="card-body">
-        <h1 class="card-title h3">
-            {{ room.name }}
-        </h1>
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+            <h1 class="card-title h3 mb-0">
+                {{ room.name }}
+            </h1>
+            <a
+                href="{% url 'rooms:update' room.slug %}"
+                class="btn btn-warning btn-sm"
+            >
+                Редактировать помещение
+            </a>
+        </div>
+        {% if room.image %}
+            <div class="mb-3">
+                <img
+                    src="{{ room.image.url }}"
+                    alt="{{ room.name }}"
+                    class="img-fluid rounded room-detail-image"
+                >
+            </div>
+        {% else %}
+            <p class="text-muted">Изображение не загружено.</p>
+        {% endif %}
         <p class="card-text">
             <strong>ID:</strong> {{ room.id }} |
             <strong>Slug:</strong> <code>{{ room.slug }}</code>
