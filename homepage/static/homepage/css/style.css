@@ -26,3 +26,35 @@ body {
     height: auto;
     margin: 1rem 0;
 }
+
+.booking-filter-form {
+    padding: 16px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.filter-field label {
+    font-weight: 500;
+    margin-bottom: 0;
+}
+
+.form-error {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 2px;
+}
+
+.errorlist {
+    color: #dc3545;
+    list-style: none;
+    padding-left: 0;
+    margin: 4px 0 0;
+    font-size: 0.875rem;
+}
