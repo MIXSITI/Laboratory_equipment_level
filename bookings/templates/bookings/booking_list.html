@@ -5,7 +5,12 @@
 {% endblock %}
 
 {% block content %}
-<h1>Бронирования оборудования</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="mb-0">Бронирования оборудования</h1>
+    <a href="{% url 'bookings:booking_create' %}" class="btn btn-primary">
+        Создать бронирование
+    </a>
+</div>
 <p>
     Найдено бронирований: {{ page_obj.paginator.count }}
 </p>
@@ -74,7 +79,7 @@
 
 <ul class="list-group mb-4">
 {% for booking in bookings %}
-    <li class="list-group-item d-flex justify-content-between align-items-center">
+    <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
             <a href="{% url 'bookings:detail' booking.id %}">
                 Бронирование №{{ booking.id }}: {{ booking.room_name }} — {{ booking.booking_date|date:"d.m.Y" }} ({{ booking.user_name }})
@@ -83,7 +88,27 @@
                 Роль: {{ booking.user_role }} | Вместимость: {{ booking.capacity }} | Стоимость: {{ booking.cost }} руб.
             </small>
         </div>
-        {% include "bookings/includes/booking_status.html" %}
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            {% include "bookings/includes/booking_status.html" %}
+            {% if booking.status == "active" %}
+                <a
+                    href="{% url 'bookings:booking_update' booking.id %}"
+                    class="btn btn-warning btn-sm"
+                >
+                    Редактировать
+                </a>
+                <form
+                    method="post"
+                    action="{% url 'bookings:booking_cancel' booking.id %}"
+                    class="d-inline"
+                >
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        Отменить
+                    </button>
+                </form>
+            {% endif %}
+        </div>
     </li>
 {% empty %}
     <li class="list-group-item">

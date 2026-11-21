@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if booking %}
+Редактирование бронирования №{{ booking.id }} – Roomly
+{% else %}
+Создание бронирования – Roomly
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card room-card">
+    <div class="card-body">
+        {% if booking %}
+            <h1 class="card-title h3 mb-3">
+                Редактирование бронирования №{{ booking.id }}
+            </h1>
+        {% else %}
+            <h1 class="card-title h3 mb-3">
+                Создание бронирования
+            </h1>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            {% for error in form.non_field_errors %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endfor %}
+
+            {% for field in form %}
+                <div class="mb-3">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                {% if booking %}
+                    <button type="submit" class="btn btn-primary">
+                        Сохранить изменения
+                    </button>
+                {% else %}
+                    <button type="submit" class="btn btn-primary">
+                        Создать бронирование
+                    </button>
+                {% endif %}
+                <a
+                    href="{% url 'bookings:bookings' %}"
+                    class="btn btn-outline-secondary"
+                >
+                    Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

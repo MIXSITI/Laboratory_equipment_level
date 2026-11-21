@@ -47,6 +47,26 @@
             <strong>Статус:</strong>
             {% include "bookings/includes/booking_status.html" %}
         </p>
+        {% if booking.status == "active" %}
+        <div class="d-flex flex-wrap gap-2 mt-3">
+            <a
+                href="{% url 'bookings:booking_update' booking.id %}"
+                class="btn btn-warning btn-sm"
+            >
+                Редактировать
+            </a>
+            <form
+                method="post"
+                action="{% url 'bookings:booking_cancel' booking.id %}"
+                class="d-inline"
+            >
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm">
+                    Отменить
+                </button>
+            </form>
+        </div>
+        {% endif %}
     </div>
 </div>
 <a

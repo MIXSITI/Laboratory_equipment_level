@@ -1,12 +1,14 @@
 from django.core.paginator import Paginator
 from django.db.models import Avg, Count, F, Max, Min, Q, Sum
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from bookings.models import Booking
 from rooms.models import Room
 from users.models import User
 
-from .forms import BookingFilterForm
+from .forms import BookingFilterForm, BookingForm
 
 
 def booking_list(request):
@@ -129,6 +131,96 @@ def booking_detail(request, booking_id: int):
         "bookings/booking_detail.html",
         {"booking": booking},
     )
+
+
+def booking_create(request):
+    if request.method == "POST":
+        form = BookingForm(request.POST)
+        if form.is_valid():
+            room = form.cleaned_data["room"]
+            booking_date = form.cleaned_data["booking_date"]
+            is_booked = Booking.objects.active().filter(
+                room=room,
+                booking_date=booking_date,
+            ).exists()
+            if is_booked:
+                form.add_error(
+                    None,
+                    "Выбранное помещение уже забронировано на эту дату.",
+                )
+            else:
+                booking = form.save(commit=False)
+                booking.cost = round(
+                    booking.room.hourly_rate * booking.duration_hours,
+                    2,
+                )
+                booking.save()
+                return redirect("bookings:bookings")
+    else:
+        form = BookingForm(
+            initial={
+                "booking_date": timezone.localdate(),
+            }
+        )
+
+    return render(
+        request,
+        "bookings/booking_form.html",
+        {"form": form},
+    )
+
+
+def booking_update(request, booking_id: int):
+    booking = get_object_or_404(
+        Booking.objects.active(),
+        pk=booking_id,
+    )
+    if request.method == "POST":
+        form = BookingForm(request.POST, instance=booking)
+        if form.is_valid():
+            room = form.cleaned_data["room"]
+            booking_date = form.cleaned_data["booking_date"]
+            is_booked = (
+                Booking.objects.active()
+                .filter(room=room, booking_date=booking_date)
+                .exclude(pk=booking.pk)
+                .exists()
+            )
+            if is_booked:
+                form.add_error(
+                    None,
+                    "Выбранное помещение уже забронировано на эту дату.",
+                )
+            else:
+                updated_booking = form.save(commit=False)
+                updated_booking.cost = round(
+                    updated_booking.room.hourly_rate
+                    * updated_booking.duration_hours,
+                    2,
+                )
+                updated_booking.save()
+                return redirect("bookings:bookings")
+    else:
+        form = BookingForm(instance=booking)
+
+    return render(
+        request,
+        "bookings/booking_form.html",
+        {
+            "form": form,
+            "booking": booking,
+        },
+    )
+
+
+@require_POST
+def booking_cancel(request, booking_id: int):
+    booking = get_object_or_404(
+        Booking.objects.active(),
+        pk=booking_id,
+    )
+    booking.cancel()
+    return redirect("bookings:bookings")
 
 
 def statistics(request):
