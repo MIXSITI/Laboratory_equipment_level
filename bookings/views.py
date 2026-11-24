@@ -31,63 +31,62 @@ class BookingListView(DataMixin, ListView):
                 "sort": "date",
             },
         )
-        self.filter_valid = (
+        filter_valid = (
             self.filter_form.is_bound and self.filter_form.is_valid()
         )
 
-        self.booking_date = None
-        self.room_id = None
-        self.user_id = None
-        self.role = ""
-        self.status_param = Booking.Status.ACTIVE
-        self.search = ""
-        self.sort = "date"
+        booking_date = None
+        room_id = None
+        user_id = None
+        role = ""
+        status_param = Booking.Status.ACTIVE
+        search = ""
+        sort = "date"
         self.filter_error = None
 
         if self.filter_form.is_bound:
-            if self.filter_valid:
-                self.booking_date = self.filter_form.cleaned_data.get("date")
+            if filter_valid:
+                booking_date = self.filter_form.cleaned_data.get("date")
                 selected_room = self.filter_form.cleaned_data.get("room")
                 selected_user = self.filter_form.cleaned_data.get("user")
-                self.room_id = selected_room.pk if selected_room else None
-                self.user_id = selected_user.pk if selected_user else None
-                self.role = self.filter_form.cleaned_data.get("role") or ""
-                self.status_param = (
+                room_id = selected_room.pk if selected_room else None
+                user_id = selected_user.pk if selected_user else None
+                role = self.filter_form.cleaned_data.get("role") or ""
+                status_param = (
                     self.filter_form.cleaned_data.get("status")
                     or Booking.Status.ACTIVE
                 )
-                self.search = (
+                search = (
                     self.filter_form.cleaned_data.get("search") or ""
                 ).strip()
-                self.sort = self.filter_form.cleaned_data.get("sort") or "date"
+                sort = self.filter_form.cleaned_data.get("sort") or "date"
             else:
                 self.filter_error = (
                     "Проверьте корректность параметров фильтрации."
                 )
 
-        if self.status_param == Booking.Status.CANCELLED:
+        if status_param == Booking.Status.CANCELLED:
             bookings_data = Booking.objects.cancelled()
-        elif self.status_param == Booking.Status.COMPLETED:
+        elif status_param == Booking.Status.COMPLETED:
             bookings_data = Booking.objects.completed()
-        elif self.status_param == "all":
+        elif status_param == "all":
             bookings_data = Booking.objects.all()
         else:
-            self.status_param = Booking.Status.ACTIVE
             bookings_data = Booking.objects.active()
 
-        if self.filter_valid:
-            if self.booking_date:
-                bookings_data = bookings_data.for_date(self.booking_date)
-            if self.room_id:
-                bookings_data = bookings_data.filter(room_id=self.room_id)
-            if self.user_id:
-                bookings_data = bookings_data.filter(user_id=self.user_id)
-            if self.role:
-                bookings_data = bookings_data.filter(user__role=self.role)
-            if self.search:
+        if filter_valid:
+            if booking_date:
+                bookings_data = bookings_data.for_date(booking_date)
+            if room_id:
+                bookings_data = bookings_data.filter(room_id=room_id)
+            if user_id:
+                bookings_data = bookings_data.filter(user_id=user_id)
+            if role:
+                bookings_data = bookings_data.filter(user__role=role)
+            if search:
                 bookings_data = bookings_data.filter(
-                    Q(room__name__icontains=self.search)
-                    | Q(user__name__icontains=self.search)
+                    Q(room__name__icontains=search)
+                    | Q(user__name__icontains=search)
                 )
 
         bookings_data = bookings_data.annotate(
@@ -103,7 +102,7 @@ class BookingListView(DataMixin, ListView):
             "user": "user__name",
             "cost": "-cost",
         }
-        sort_field = sort_fields.get(self.sort, "booking_date")
+        sort_field = sort_fields.get(sort, "booking_date")
         bookings_data = bookings_data.order_by(sort_field, "id")
 
         return bookings_data.values(
@@ -119,19 +118,11 @@ class BookingListView(DataMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["total_bookings"] = self.get_queryset().count()
+        paginator = context.get("paginator")
+        context["total_bookings"] = (
+            paginator.count if paginator else self.object_list.count()
+        )
         context["form"] = self.filter_form
-        context["booking_date"] = self.booking_date
-        context["selected_room"] = self.room_id
-        context["selected_user"] = self.user_id
-        context["selected_role"] = self.role
-        context["selected_status"] = self.status_param
-        context["status_choices"] = Booking.Status.choices
-        context["search_query"] = self.search
-        context["sort"] = self.sort
-        context["role_choices"] = User.ROLE_CHOICES
-        context["rooms"] = Room.objects.order_by("name")
-        context["users"] = User.objects.order_by("name")
         context["error"] = self.filter_error
         return context
 

@@ -1,7 +1,8 @@
-from datetime import date, datetime
+from datetime import datetime
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.generic import DetailView
 
 from bookings.models import Booking
@@ -85,7 +86,7 @@ class RoomDetailView(DataMixin, DetailView):
         is_booked_today = (
             room.bookings
             .active()
-            .for_date(date.today())
+            .for_date(timezone.localdate())
             .exists()
         )
         return self.get_mixin_context(
