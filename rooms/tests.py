@@ -119,6 +119,11 @@ class RoomsViewsTests(TestCase):
         response = self.client.get(expected_url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "EQ-301")
+        self.assertContains(
+            response,
+            "<title>Помещение: Спектрофотометр UV-1800 – Roomly</title>",
+            html=False,
+        )
 
         redirect_response = self.client.get("/rooms/1/")
         self.assertEqual(redirect_response.status_code, 302)

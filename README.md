@@ -10,9 +10,10 @@ Roomly – сквозное учебное веб-приложение для у
 - централизованно выводить общие данные сайта и счётчик ресурсов через контекстный процессор `rooms.context_processors.room_context`;
 - работать с тремя статусами бронирования через `Booking.Status(TextChoices)` (`ACTIVE`, `CANCELLED`, `COMPLETED`) и методы пользовательского менеджера `Booking.objects.active()`, `.cancelled()`, `.completed()`, `.for_date()`;
 - искать свободные и исправные ресурсы на дату, фильтровать, сортировать и просматривать постранично список бронирований, а также анализировать статистику и SQL-запросы через **Django Debug Toolbar**;
-- фильтровать бронирования через форму `BookingFilterForm` (`forms.Form`), создавать и редактировать бронирования через `BookingForm` (`forms.ModelForm`), отменять активные бронирования защищённым POST-запросом и загружать изображения помещений через `RoomForm` (`enctype="multipart/form-data"`).
+- фильтровать бронирования через форму `BookingFilterForm` (`forms.Form`), создавать и редактировать бронирования через `BookingForm` (`forms.ModelForm`), отменять активные бронирования защищённым POST-запросом и загружать изображения помещений через `RoomForm` (`enctype="multipart/form-data"`);
+- использовать классовые представления Django (`TemplateView`, `ListView`, `DetailView`, `CreateView`, `UpdateView`) с встроенной пагинацией, сохранением GET-параметров через `{% querystring %}`, динамическим контекстом и унификацией рутинных операций через примесь `DataMixin` (`roomly/utils.py`).
 
-Проект развивался поэтапно: консольное ООП-приложение с JSON-хранилищем (ПР1–ПР3) -> базовый веб-интерфейс Django (ПР5) -> система шаблонов DTL и статика (ПР6) -> реляционная БД SQLite и SQL-запросы (ПР7) -> модели, миграции и запросы Django ORM (ПР9) -> Django Admin, `TextChoices`, пользовательский менеджер `QuerySet`, `GeneratedField`, `slug` и контекстный процессор (ПР10) -> формы Django (`Form`, `ModelForm`), серверная валидация, CSRF-защита и загрузка изображений (ПР11).
+Проект развивался поэтапно: консольное ООП-приложение с JSON-хранилищем (ПР1–ПР3) -> базовый веб-интерфейс Django (ПР5) -> система шаблонов DTL и статика (ПР6) -> реляционная БД SQLite и SQL-запросы (ПР7) -> модели, миграции и запросы Django ORM (ПР9) -> Django Admin, `TextChoices`, пользовательский менеджер `QuerySet`, `GeneratedField`, `slug` и контекстный процессор (ПР10) -> формы Django (`Form`, `ModelForm`), серверная валидация, CSRF-защита и загрузка изображений (ПР11) -> классовые представления CBV, пагинация `ListView` и примесь `DataMixin` (ПР13).
 
 ## 2. Используемые технологии
 - Python 3.11+;
@@ -52,24 +53,25 @@ Roomly – сквозное учебное веб-приложение для у
 - **`BookingAdmin` (`bookings/admin.py`)**: оптимизация `list_select_related = ("room", "user")`, вычисляемый столбец `room_capacity` с сортировкой `room__capacity`, поиск по `room__name` и `user__name`, фильтры по дате и статусу, `date_hierarchy = "booking_date"`, `autocomplete_fields = ("room", "user")`, массовые действия «Отменить выбранные бронирования» и «Вернуть в активные».
 
 ## 5. Основные веб-страницы и маршруты
-- `/` – главная страница с топ-3 готовых ресурсов и ближайших активных заявок (срез `QuerySet [:3]`, `select_related`);
+- `/` – главная страница (`HomePageView(TemplateView)`) с топ-3 готовых ресурсов и ближайших активных заявок (срез `QuerySet [:3]`, `select_related`);
 - `/rooms/` и `/equipment/` – каталоги ресурсов с регистронезависимым поиском (`Q(name__icontains=q) | Q(inventory_number__icontains=q)`, а в `/rooms/` также по числовой вместимости), фильтрами и динамической сортировкой (`sort=name|capacity`, `direction=asc|desc`);
 - `/rooms/create/` и `/rooms/<slug:slug>/edit/` – создание и редактирование помещений/оборудования через `RoomForm` (`ModelForm` + `MinimumCapacityValidator`) с загрузкой изображений (`enctype="multipart/form-data"`, `request.FILES`);
-- `/rooms/<slug:slug>/` – детальная карточка помещения по `slug` (`get_object_or_404`, `get_absolute_url()`, редирект со старых `/rooms/<int:room_id>/`), включая вывод загруженного изображения;
+- `/rooms/<slug:slug>/` – детальная карточка помещения по `slug` (`RoomDetailView(DataMixin, DetailView)`, `get_absolute_url()`, редирект со старых `/rooms/<int:room_id>/`), включая вывод загруженного изображения;
 - `/equipment/<int:equipment_id>/` – детальная карточка лабораторного прибора;
 - `/rooms/available/` – поиск свободных и исправных ресурсов на дату (учитываются только брони со статусом `ACTIVE`);
-- `/bookings/` – список бронирований с фильтрацией через `BookingFilterForm` (`GET`), валидацией параметров через `is_valid()`/`cleaned_data`, сортировкой (`sort_fields`), `annotate(F(...))`, `values(...)` и `Paginator` с `{% querystring %}`;
-- `/bookings/create/` – создание нового бронирования через `BookingForm` (`ModelForm`) с проверкой даты (`clean_booking_date`), готовности ресурса (`clean()`), длительности (`validate_positive_duration`), занятости помещения (`Booking.objects.active().filter(...).exists()`) и расчётом стоимости через `save(commit=False)`;
-- `/bookings/<int:booking_id>/edit/` – редактирование активного бронирования (`instance=booking`, исключение текущей записи `.exclude(pk=booking.pk)`);
+- `/bookings/` – список бронирований (`BookingListView(DataMixin, ListView)`) с фильтрацией через `BookingFilterForm` (`GET`), валидацией параметров через `is_valid()`/`cleaned_data`, сортировкой (`sort_fields`), `annotate(F(...))`, `values(...)`, подсчётом `total_bookings` и встроенной пагинацией `paginate_by = 5` с `{% querystring %}`;
+- `/bookings/create/` – создание нового бронирования (`BookingCreateView(DataMixin, CreateView)`) через `BookingForm` (`ModelForm`) с проверкой даты (`clean_booking_date`), готовности ресурса (`clean()`), длительности (`validate_positive_duration`), занятости помещения (`Booking.objects.active().filter(...).exists()`), серверным назначением владельца из `request.user` и расчётом стоимости;
+- `/bookings/<int:booking_id>/edit/` – редактирование активного бронирования (`BookingUpdateView(DataMixin, UpdateView)`, исключение текущей записи `.exclude(pk=self.object.pk)`);
 - `/bookings/<int:booking_id>/cancel/` – отмена активного бронирования через `@require_POST` + `{% csrf_token %}` (вызов `booking.cancel()` без удаления записи из БД);
-- `/bookings/<int:booking_id>/` – детальная карточка бронирования (`select_related("room", "user")`);
+- `/bookings/<int:booking_id>/` – детальная карточка бронирования (`BookingDetailView(DataMixin, DetailView)`, `select_related("room", "user")`);
 - `/bookings/statistics/` – аналитическая сводка по всем статусам (`ACTIVE`, `CANCELLED`, `COMPLETED`) и выручке;
 - `/admin/` – административная панель Django.
 
-## 5.1. Формы Django и валидация (ПР11)
+## 5.1. Формы Django, CBV и примесь `DataMixin` (ПР11–ПР13)
 - **`BookingFilterForm` (`bookings/forms.py`)** – форма фильтрации списка бронирований на базе `forms.Form` (GET-параметры `search`, `date`, `status`, `room`, `user`, `role`, `sort`).
-- **`BookingForm` (`bookings/forms.py`)** – `ModelForm` для создания и редактирования заявок на базе `Booking` с явным списком `fields`, виджетами Bootstrap (`DateInput(type="date")`, `Textarea`, `Select`, `NumberInput`), подсказками `help_texts`, валидатором `validate_positive_duration`, проверкой `clean_booking_date()` и межполевой проверкой `clean()`; служебные поля `status` и `cost` задаются на сервере.
+- **`BookingForm` (`bookings/forms.py`)** – `ModelForm` для создания и редактирования заявок на базе `Booking` с явным списком `fields = ["room", "booking_date", "duration_hours", "notes"]` (поле `user` исключено из формы и назначается на сервере), виджетами Bootstrap (`DateInput(type="date")`, `Textarea`, `Select`, `NumberInput`), подсказками `help_texts`, валидатором `validate_positive_duration`, проверкой `clean_booking_date()` и межполевой проверкой `clean()`; служебные поля `status`, `user` и `cost` задаются на сервере.
 - **`RoomForm` (`rooms/forms.py`)** – `ModelForm` для модели `Room` с валидатором-классом `MinimumCapacityValidator`, очисткой названия `clean_name()`, проверкой ставки `clean_hourly_rate()` и загрузкой фотографий `ImageField` в `MEDIA_ROOT/rooms/`.
+- **`DataMixin` (`roomly/utils.py`)** – примесь для унификации заголовков страниц (`title_page`, `get_mixin_context()`), пагинации по умолчанию (`paginate_by = 5`) и дополнительного контекста (`extra_context`) в `BookingListView`, `BookingDetailView`, `BookingCreateView`, `BookingUpdateView` и `RoomDetailView`; подключается первой в списке наследования для корректного MRO.
 
 ## 6. Установка и запуск проекта
 1. Клонировать репозиторий и перейти в каталог проекта:

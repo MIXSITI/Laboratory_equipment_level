@@ -6,20 +6,20 @@ from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from bookings.models import Booking
+from roomly.utils import DataMixin
 from rooms.models import Room
 from users.models import User
 
 from .forms import BookingFilterForm, BookingForm
 
 
-class BookingListView(ListView):
+class BookingListView(DataMixin, ListView):
     model = Booking
     template_name = "bookings/booking_list.html"
     context_object_name = "bookings"
-    paginate_by = 5
     allow_empty = True
+    title_page = "Список бронирований"
     extra_context = {
-        "page_title": "Список бронирований",
         "page_description": "Просмотр и фильтрация активных бронирований",
     }
 
@@ -136,7 +136,7 @@ class BookingListView(ListView):
         return context
 
 
-class BookingDetailView(DetailView):
+class BookingDetailView(DataMixin, DetailView):
     model = Booking
     template_name = "bookings/booking_detail.html"
     context_object_name = "booking"
@@ -145,13 +145,21 @@ class BookingDetailView(DetailView):
     def get_queryset(self):
         return Booking.objects.select_related("room", "user")
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return self.get_mixin_context(
+            context,
+            title=f"Бронирование № {self.object.pk}",
+        )
 
-class BookingCreateView(CreateView):
+
+class BookingCreateView(DataMixin, CreateView):
     model = Booking
     form_class = BookingForm
     template_name = "bookings/booking_form.html"
     context_object_name = "booking"
     success_url = reverse_lazy("bookings:bookings")
+    title_page = "Создание бронирования"
 
     def get_initial(self):
         initial = super().get_initial()
@@ -220,13 +228,14 @@ class BookingCreateView(CreateView):
         return super().form_valid(form)
 
 
-class BookingUpdateView(UpdateView):
+class BookingUpdateView(DataMixin, UpdateView):
     model = Booking
     form_class = BookingForm
     template_name = "bookings/booking_form.html"
     context_object_name = "booking"
     pk_url_kwarg = "booking_id"
     success_url = reverse_lazy("bookings:bookings")
+    title_page = "Редактирование бронирования"
 
     def get_queryset(self):
         return Booking.objects.active()

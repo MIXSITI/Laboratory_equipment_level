@@ -2,6 +2,7 @@ from datetime import timedelta
 from io import BytesIO
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import Client, override_settings
@@ -10,6 +11,7 @@ from PIL import Image
 
 from bookings.models import Booking
 from rooms.models import Room
+from users.models import User
 
 pytestmark = pytest.mark.django_db
 
@@ -119,11 +121,16 @@ def test_bookings_views():
     client = Client()
     response = client.get("/bookings/")
     assert response.status_code == 200
-    assert "Бронирования оборудования" in response.content.decode("utf-8")
+    body = response.content.decode("utf-8")
+    assert "Список бронирований" in body
+    assert "<title>Список бронирований – Roomly</title>" in body
+    assert "Всего активных бронирований по выбранным условиям:" in body
 
     response_detail = client.get("/bookings/1/")
     assert response_detail.status_code == 200
-    assert "Бронирование №1" in response_detail.content.decode("utf-8")
+    detail_body = response_detail.content.decode("utf-8")
+    assert "Бронирование №1" in detail_body
+    assert "<title>Бронирование № 1 – Roomly</title>" in detail_body
 
     response_404 = client.get("/bookings/999/")
     assert response_404.status_code == 404
@@ -189,6 +196,13 @@ def test_bookings_filter_sort_related_and_pagination():
 def test_pr11_booking_and_room_forms_workflow(tmp_path, settings):
     settings.MEDIA_ROOT = tmp_path
     client = Client()
+    auth_user_model = get_user_model()
+    auth_user = auth_user_model.objects.create_user(
+        username="ivanov_web",
+        email="ivanov@edu.mirea.ru",
+        password="WebPassword123!",
+    )
+    client.force_login(auth_user)
     future_date = (timezone.localdate() + timedelta(days=10)).isoformat()
 
     create_booking_res = client.post(
@@ -196,15 +210,15 @@ def test_pr11_booking_and_room_forms_workflow(tmp_path, settings):
         {
             "room": 1,
             "booking_date": future_date,
-            "user": 1,
             "duration_hours": "2.0",
-            "notes": "Тестовый запуск ПР11",
+            "notes": "Тестовый запуск ПР13",
         },
         follow=True,
     )
     assert create_booking_res.status_code == 200
     created = Booking.objects.get(booking_date=future_date, room_id=1)
     assert created.cost == 2400.0
+    assert created.user == User.objects.get(pk=1)
 
     cancel_res = client.post(
         f"/bookings/{created.pk}/cancel/",

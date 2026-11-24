@@ -75,17 +75,34 @@ class BookingsViewsTests(TestCase):
     def test_bookings_list_view_and_pagination(self):
         response = self.client.get("/bookings/?room=1&sort=date")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Бронирования оборудования")
+        self.assertContains(response, "Список бронирований")
+        self.assertContains(
+            response,
+            "<title>Список бронирований – Roomly</title>",
+            html=False,
+        )
+        self.assertContains(
+            response,
+            "Всего активных бронирований по выбранным условиям: 6",
+        )
         self.assertContains(response, "page=2")
 
         res_page2 = self.client.get("/bookings/?room=1&sort=date&page=2")
         self.assertEqual(res_page2.status_code, 200)
         self.assertContains(res_page2, "Бронирование №6")
 
+        res_invalid_page = self.client.get("/bookings/?page=999")
+        self.assertEqual(res_invalid_page.status_code, 404)
+
     def test_booking_detail_view_existing(self):
         response = self.client.get("/bookings/1/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Бронирование №1")
+        self.assertContains(
+            response,
+            "<title>Бронирование № 1 – Roomly</title>",
+            html=False,
+        )
         self.assertContains(response, self.room.get_absolute_url())
 
     @override_settings(DEBUG=False)
@@ -235,6 +252,12 @@ class BookingFormsTests(TestCase):
             access_level=2,
             briefing_passed=True,
         )
+        auth_user_model = get_user_model()
+        cls.auth_user = auth_user_model.objects.create_user(
+            username="ivanov_student",
+            email="ivanov@edu.mirea.ru",
+            password="StudentPassword123!",
+        )
 
     def test_booking_filter_form_validation(self):
         unbound = BookingFilterForm(None)
@@ -259,32 +282,55 @@ class BookingFormsTests(TestCase):
         self.assertContains(invalid_date_res, "Укажите корректную дату.")
 
     def test_booking_create_get_initial_and_post_success(self):
+        self.assertNotIn("user", BookingForm.Meta.fields)
         today = timezone.localdate()
         get_res = self.client.get(reverse("bookings:booking_create"))
         self.assertEqual(get_res.status_code, 200)
         self.assertContains(get_res, "csrfmiddlewaretoken")
+        self.assertContains(
+            get_res,
+            "<title>Создание бронирования – Roomly</title>",
+            html=False,
+        )
         self.assertEqual(
             get_res.context["form"].initial["booking_date"],
             today,
         )
 
+        anon_res = self.client.post(
+            reverse("bookings:booking_create"),
+            {
+                "room": self.room.pk,
+                "booking_date": (today + timedelta(days=2)).isoformat(),
+                "duration_hours": "2.5",
+                "notes": "Без авторизации",
+            },
+        )
+        self.assertEqual(anon_res.status_code, 200)
+        self.assertContains(
+            anon_res,
+            "Для создания бронирования необходимо войти в систему.",
+        )
+
+        self.client.force_login(self.auth_user)
         post_res = self.client.post(
             reverse("bookings:booking_create"),
             {
                 "room": self.room.pk,
                 "booking_date": (today + timedelta(days=2)).isoformat(),
-                "user": self.user.pk,
                 "duration_hours": "2.5",
                 "notes": "Измерение спектров",
             },
         )
         self.assertRedirects(post_res, reverse("bookings:bookings"))
         booking = Booking.objects.get()
+        self.assertEqual(booking.user, self.user)
         self.assertEqual(booking.status, Booking.Status.ACTIVE)
         self.assertEqual(booking.cost, 3000.0)
         self.assertEqual(booking.notes, "Измерение спектров")
 
     def test_booking_create_validation_and_availability(self):
+        self.client.force_login(self.auth_user)
         today = timezone.localdate()
         future_date = today + timedelta(days=3)
 
@@ -293,7 +339,6 @@ class BookingFormsTests(TestCase):
             {
                 "room": self.room.pk,
                 "booking_date": (today - timedelta(days=1)).isoformat(),
-                "user": self.user.pk,
                 "duration_hours": "1.0",
             },
         )
@@ -308,7 +353,6 @@ class BookingFormsTests(TestCase):
             {
                 "room": self.room.pk,
                 "booking_date": future_date.isoformat(),
-                "user": self.user.pk,
                 "duration_hours": "20",
             },
         )
@@ -323,7 +367,6 @@ class BookingFormsTests(TestCase):
             {
                 "room": self.maintenance_room.pk,
                 "booking_date": future_date.isoformat(),
-                "user": self.user.pk,
                 "duration_hours": "1.0",
             },
         )
@@ -343,7 +386,6 @@ class BookingFormsTests(TestCase):
             {
                 "room": self.room.pk,
                 "booking_date": future_date.isoformat(),
-                "user": self.user.pk,
                 "duration_hours": "2.0",
             },
         )
@@ -368,7 +410,6 @@ class BookingFormsTests(TestCase):
             {
                 "room": self.room.pk,
                 "booking_date": cancelled_date.isoformat(),
-                "user": self.user.pk,
                 "duration_hours": "1.5",
             },
         )
@@ -398,6 +439,7 @@ class BookingFormsTests(TestCase):
 
         self.assertIn("room", BookingForm.Meta.fields)
         self.assertNotIn("status", BookingForm.Meta.fields)
+        self.assertNotIn("user", BookingForm.Meta.fields)
 
         edit_url = reverse("bookings:booking_update", args=[booking.pk])
         get_edit = self.client.get(edit_url)
@@ -406,13 +448,17 @@ class BookingFormsTests(TestCase):
             get_edit,
             f"Редактирование бронирования №{booking.pk}",
         )
+        self.assertContains(
+            get_edit,
+            "<title>Редактирование бронирования – Roomly</title>",
+            html=False,
+        )
 
         same_slot_res = self.client.post(
             edit_url,
             {
                 "room": self.room.pk,
                 "booking_date": date_1.isoformat(),
-                "user": self.user.pk,
                 "duration_hours": "3.0",
                 "notes": "Обновлённая длительность",
             },
@@ -428,7 +474,6 @@ class BookingFormsTests(TestCase):
             {
                 "room": other_booking.room.pk,
                 "booking_date": date_2.isoformat(),
-                "user": self.user.pk,
                 "duration_hours": "1.0",
             },
         )
@@ -457,3 +502,81 @@ class BookingFormsTests(TestCase):
 
         cancelled_edit = self.client.get(edit_url)
         self.assertEqual(cancelled_edit.status_code, 404)
+
+    def test_pr13_cbv_and_datamixin_architecture(self):
+        from django.urls import resolve
+        from django.views.generic import (
+            CreateView,
+            DetailView,
+            ListView,
+            TemplateView,
+            UpdateView,
+        )
+
+        from bookings.views import (
+            BookingCreateView,
+            BookingDetailView,
+            BookingListView,
+            BookingUpdateView,
+        )
+        from homepage.views import HomePageView
+        from roomly.utils import DataMixin
+        from rooms.views import RoomDetailView
+
+        self.assertTrue(issubclass(HomePageView, TemplateView))
+        self.assertTrue(issubclass(BookingListView, DataMixin))
+        self.assertTrue(issubclass(BookingListView, ListView))
+        self.assertTrue(issubclass(BookingDetailView, DataMixin))
+        self.assertTrue(issubclass(BookingDetailView, DetailView))
+        self.assertTrue(issubclass(BookingCreateView, DataMixin))
+        self.assertTrue(issubclass(BookingCreateView, CreateView))
+        self.assertTrue(issubclass(BookingUpdateView, DataMixin))
+        self.assertTrue(issubclass(BookingUpdateView, UpdateView))
+        self.assertTrue(issubclass(RoomDetailView, DataMixin))
+        self.assertTrue(issubclass(RoomDetailView, DetailView))
+
+        self.assertEqual(BookingListView.__mro__[1], DataMixin)
+        self.assertEqual(BookingDetailView.__mro__[1], DataMixin)
+        self.assertEqual(BookingCreateView.__mro__[1], DataMixin)
+        self.assertEqual(BookingUpdateView.__mro__[1], DataMixin)
+        self.assertEqual(RoomDetailView.__mro__[1], DataMixin)
+
+        self.assertEqual(resolve("/").func.view_class, HomePageView)
+        self.assertEqual(
+            resolve("/bookings/").func.view_class,
+            BookingListView,
+        )
+        self.assertEqual(
+            resolve("/bookings/1/").func.view_class,
+            BookingDetailView,
+        )
+        self.assertEqual(
+            resolve("/bookings/create/").func.view_class,
+            BookingCreateView,
+        )
+        self.assertEqual(
+            resolve("/bookings/1/edit/").func.view_class,
+            BookingUpdateView,
+        )
+        self.assertEqual(BookingListView.paginate_by, 5)
+        self.assertTrue(BookingListView.allow_empty)
+
+        empty_res = self.client.get(
+            "/bookings/?search=несуществующий_прибор_xyz"
+        )
+        self.assertEqual(empty_res.status_code, 200)
+        self.assertContains(empty_res, "Бронирования не найдены.")
+        self.assertContains(
+            empty_res,
+            "Всего активных бронирований по выбранным условиям: 0",
+        )
+
+        self.assertNotIn("title", DataMixin.extra_context)
+        self.assertNotIn("page_description", DataMixin.extra_context)
+
+        csrf_client = self.client_class(enforce_csrf_checks=True)
+        csrf_res = csrf_client.post(
+            reverse("bookings:booking_create"),
+            {"room": self.room.pk, "booking_date": timezone.localdate()},
+        )
+        self.assertEqual(csrf_res.status_code, 403)

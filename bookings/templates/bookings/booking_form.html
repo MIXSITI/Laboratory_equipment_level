@@ -1,13 +1,5 @@
 {% extends "base.html" %}
 
-{% block title %}
-{% if booking %}
-Редактирование бронирования №{{ booking.id }} – Roomly
-{% else %}
-Создание бронирования – Roomly
-{% endif %}
-{% endblock %}
-
 {% block content %}
 <div class="card room-card">
     <div class="card-body">

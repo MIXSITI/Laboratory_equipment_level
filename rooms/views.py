@@ -2,8 +2,10 @@ from datetime import date, datetime
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.generic import DetailView
 
 from bookings.models import Booking
+from roomly.utils import DataMixin
 from rooms.models import Room
 
 from .forms import RoomForm
@@ -64,31 +66,35 @@ def rooms(request):
     )
 
 
-def room_detail(request, slug: str):
-    room = get_object_or_404(Room, slug=slug)
-    room_bookings = (
-        room.bookings
-        .active()
-        .select_related("user")
-        .order_by("booking_date", "pk")[:5]
-    )
-    is_booked_today = (
-        room.bookings
-        .active()
-        .for_date(date.today())
-        .exists()
-    )
-    context = {
-        "room": room,
-        "room_bookings": room_bookings,
-        "available_today": room.is_ready and not is_booked_today,
-        "readiness": room.check_readiness(),
-    }
-    return render(
-        request,
-        "rooms/room_detail.html",
-        context,
-    )
+class RoomDetailView(DataMixin, DetailView):
+    model = Room
+    template_name = "rooms/room_detail.html"
+    context_object_name = "room"
+    slug_field = "slug"
+    slug_url_kwarg = "slug"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        room = self.object
+        room_bookings = (
+            room.bookings
+            .active()
+            .select_related("user")
+            .order_by("booking_date", "pk")[:5]
+        )
+        is_booked_today = (
+            room.bookings
+            .active()
+            .for_date(date.today())
+            .exists()
+        )
+        return self.get_mixin_context(
+            context,
+            title=f"Помещение: {room.name}",
+            room_bookings=room_bookings,
+            available_today=room.is_ready and not is_booked_today,
+            readiness=room.check_readiness(),
+        )
 
 
 def room_detail_by_id(request, room_id: int):
