@@ -5,10 +5,14 @@ from . import views
 app_name = "bookings"
 
 urlpatterns = [
-    path("", views.booking_list, name="bookings"),
+    path("", views.BookingListView.as_view(), name="bookings"),
     path("create/", views.booking_create, name="booking_create"),
     path("statistics/", views.statistics, name="statistics"),
-    path("<int:booking_id>/", views.booking_detail, name="detail"),
+    path(
+        "<int:booking_id>/",
+        views.BookingDetailView.as_view(),
+        name="detail",
+    ),
     path(
         "<int:booking_id>/edit/",
         views.booking_update,

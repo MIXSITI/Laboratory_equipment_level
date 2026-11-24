@@ -1,8 +1,8 @@
-from django.core.paginator import Paginator
 from django.db.models import Avg, Count, F, Max, Min, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.views.generic import DetailView, ListView
 
 from bookings.models import Booking
 from rooms.models import Room
@@ -11,126 +11,138 @@ from users.models import User
 from .forms import BookingFilterForm, BookingForm
 
 
-def booking_list(request):
-    form = BookingFilterForm(
-        request.GET or None,
-        initial={
-            "status": Booking.Status.ACTIVE,
-            "sort": "date",
-        },
-    )
-    form_valid = form.is_bound and form.is_valid()
+class BookingListView(ListView):
+    model = Booking
+    template_name = "bookings/booking_list.html"
+    context_object_name = "bookings"
+    paginate_by = 5
+    allow_empty = True
+    extra_context = {
+        "page_title": "Список бронирований",
+        "page_description": "Просмотр и фильтрация активных бронирований",
+    }
 
-    booking_date = None
-    room_id = None
-    user_id = None
-    role = ""
-    status_param = Booking.Status.ACTIVE
-    search = ""
-    sort = "date"
-    error = None
+    def get_queryset(self):
+        self.filter_form = BookingFilterForm(
+            self.request.GET or None,
+            initial={
+                "status": Booking.Status.ACTIVE,
+                "sort": "date",
+            },
+        )
+        self.filter_valid = (
+            self.filter_form.is_bound and self.filter_form.is_valid()
+        )
 
-    if form.is_bound:
-        if form_valid:
-            booking_date = form.cleaned_data.get("date")
-            selected_room = form.cleaned_data.get("room")
-            selected_user = form.cleaned_data.get("user")
-            room_id = selected_room.pk if selected_room else None
-            user_id = selected_user.pk if selected_user else None
-            role = form.cleaned_data.get("role") or ""
-            status_param = (
-                form.cleaned_data.get("status") or Booking.Status.ACTIVE
-            )
-            search = (form.cleaned_data.get("search") or "").strip()
-            sort = form.cleaned_data.get("sort") or "date"
+        self.booking_date = None
+        self.room_id = None
+        self.user_id = None
+        self.role = ""
+        self.status_param = Booking.Status.ACTIVE
+        self.search = ""
+        self.sort = "date"
+        self.filter_error = None
+
+        if self.filter_form.is_bound:
+            if self.filter_valid:
+                self.booking_date = self.filter_form.cleaned_data.get("date")
+                selected_room = self.filter_form.cleaned_data.get("room")
+                selected_user = self.filter_form.cleaned_data.get("user")
+                self.room_id = selected_room.pk if selected_room else None
+                self.user_id = selected_user.pk if selected_user else None
+                self.role = self.filter_form.cleaned_data.get("role") or ""
+                self.status_param = (
+                    self.filter_form.cleaned_data.get("status")
+                    or Booking.Status.ACTIVE
+                )
+                self.search = (
+                    self.filter_form.cleaned_data.get("search") or ""
+                ).strip()
+                self.sort = self.filter_form.cleaned_data.get("sort") or "date"
+            else:
+                self.filter_error = (
+                    "Проверьте корректность параметров фильтрации."
+                )
+
+        if self.status_param == Booking.Status.CANCELLED:
+            bookings_data = Booking.objects.cancelled()
+        elif self.status_param == Booking.Status.COMPLETED:
+            bookings_data = Booking.objects.completed()
+        elif self.status_param == "all":
+            bookings_data = Booking.objects.all()
         else:
-            error = "Проверьте корректность параметров фильтрации."
+            self.status_param = Booking.Status.ACTIVE
+            bookings_data = Booking.objects.active()
 
-    if status_param == Booking.Status.CANCELLED:
-        bookings_data = Booking.objects.cancelled()
-    elif status_param == Booking.Status.COMPLETED:
-        bookings_data = Booking.objects.completed()
-    elif status_param == "all":
-        bookings_data = Booking.objects.all()
-    else:
-        status_param = Booking.Status.ACTIVE
-        bookings_data = Booking.objects.active()
+        if self.filter_valid:
+            if self.booking_date:
+                bookings_data = bookings_data.for_date(self.booking_date)
+            if self.room_id:
+                bookings_data = bookings_data.filter(room_id=self.room_id)
+            if self.user_id:
+                bookings_data = bookings_data.filter(user_id=self.user_id)
+            if self.role:
+                bookings_data = bookings_data.filter(user__role=self.role)
+            if self.search:
+                bookings_data = bookings_data.filter(
+                    Q(room__name__icontains=self.search)
+                    | Q(user__name__icontains=self.search)
+                )
 
-    if form_valid:
-        if booking_date:
-            bookings_data = bookings_data.for_date(booking_date)
-        if room_id:
-            bookings_data = bookings_data.filter(room_id=room_id)
-        if user_id:
-            bookings_data = bookings_data.filter(user_id=user_id)
-        if role:
-            bookings_data = bookings_data.filter(user__role=role)
-        if search:
-            bookings_data = bookings_data.filter(
-                Q(room__name__icontains=search)
-                | Q(user__name__icontains=search)
-            )
+        bookings_data = bookings_data.annotate(
+            room_name=F("room__name"),
+            capacity=F("room__capacity"),
+            user_name=F("user__name"),
+            user_role=F("user__role"),
+        )
 
-    bookings_data = bookings_data.annotate(
-        room_name=F("room__name"),
-        capacity=F("room__capacity"),
-        user_name=F("user__name"),
-        user_role=F("user__role"),
-    )
+        sort_fields = {
+            "date": "booking_date",
+            "room": "room__name",
+            "user": "user__name",
+            "cost": "-cost",
+        }
+        sort_field = sort_fields.get(self.sort, "booking_date")
+        bookings_data = bookings_data.order_by(sort_field, "id")
 
-    sort_fields = {
-        "date": "booking_date",
-        "room": "room__name",
-        "user": "user__name",
-        "cost": "-cost",
-    }
-    sort_field = sort_fields.get(sort, "booking_date")
-    bookings_data = bookings_data.order_by(sort_field, "id")
+        return bookings_data.values(
+            "id",
+            "booking_date",
+            "room_name",
+            "capacity",
+            "user_name",
+            "user_role",
+            "cost",
+            "status",
+        )
 
-    bookings_data = bookings_data.values(
-        "id",
-        "booking_date",
-        "room_name",
-        "capacity",
-        "user_name",
-        "user_role",
-        "cost",
-        "status",
-    )
-
-    paginator = Paginator(bookings_data, 5)
-    page_obj = paginator.get_page(request.GET.get("page"))
-
-    context = {
-        "bookings": page_obj,
-        "page_obj": page_obj,
-        "form": form,
-        "booking_date": booking_date,
-        "selected_room": room_id,
-        "selected_user": user_id,
-        "selected_role": role,
-        "selected_status": status_param,
-        "status_choices": Booking.Status.choices,
-        "search_query": search,
-        "sort": sort,
-        "role_choices": User.ROLE_CHOICES,
-        "rooms": Room.objects.order_by("name"),
-        "users": User.objects.order_by("name"),
-        "error": error,
-    }
-    return render(request, "bookings/booking_list.html", context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["total_bookings"] = self.get_queryset().count()
+        context["form"] = self.filter_form
+        context["booking_date"] = self.booking_date
+        context["selected_room"] = self.room_id
+        context["selected_user"] = self.user_id
+        context["selected_role"] = self.role
+        context["selected_status"] = self.status_param
+        context["status_choices"] = Booking.Status.choices
+        context["search_query"] = self.search
+        context["sort"] = self.sort
+        context["role_choices"] = User.ROLE_CHOICES
+        context["rooms"] = Room.objects.order_by("name")
+        context["users"] = User.objects.order_by("name")
+        context["error"] = self.filter_error
+        return context
 
 
-def booking_detail(request, booking_id: int):
-    booking = get_object_or_404(
-        Booking.objects.select_related("room", "user"),
-        pk=booking_id,
-    )
-    return render(
-        request,
-        "bookings/booking_detail.html",
-        {"booking": booking},
-    )
+class BookingDetailView(DetailView):
+    model = Booking
+    template_name = "bookings/booking_detail.html"
+    context_object_name = "booking"
+    pk_url_kwarg = "booking_id"
+
+    def get_queryset(self):
+        return Booking.objects.select_related("room", "user")
 
 
 def booking_create(request):

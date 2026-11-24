@@ -1,18 +1,21 @@
 {% extends "base.html" %}
 
 {% block title %}
-Бронирования – Roomly
+{{ page_title }} – Roomly
 {% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <h1 class="mb-0">Бронирования оборудования</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <h1 class="mb-0">{{ page_title }}</h1>
     <a href="{% url 'bookings:booking_create' %}" class="btn btn-primary">
         Создать бронирование
     </a>
 </div>
+{% if page_description %}
+<p class="text-muted mb-2">{{ page_description }}</p>
+{% endif %}
 <p>
-    Найдено бронирований: {{ page_obj.paginator.count }}
+    Всего активных бронирований по выбранным условиям: {{ total_bookings }}
 </p>
 
 {% if error %}
@@ -117,7 +120,7 @@
 {% endfor %}
 </ul>
 
-{% if page_obj.paginator.num_pages > 1 %}
+{% if is_paginated %}
 <nav aria-label="Навигация по страницам">
   <ul class="pagination justify-content-center">
     {% if page_obj.has_previous %}
@@ -131,7 +134,7 @@
       <span class="page-link">Назад</span>
     </li>
     {% endif %}
-    {% for page_number in page_obj.paginator.page_range %}
+    {% for page_number in paginator.page_range %}
     {% if page_number == page_obj.number %}
     <li class="page-item active" aria-current="page">
       <span class="page-link">{{ page_number }}</span>
