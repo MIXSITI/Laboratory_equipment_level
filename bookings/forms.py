@@ -119,21 +119,18 @@ class BookingForm(forms.ModelForm):
         fields = [
             "room",
             "booking_date",
-            "user",
             "duration_hours",
             "notes",
         ]
         labels = {
             "room": "Помещение / оборудование",
             "booking_date": "Дата бронирования",
-            "user": "Пользователь",
             "duration_hours": "Длительность (часы)",
             "notes": "Примечание",
         }
         help_texts = {
             "room": "Выберите помещение или оборудование для бронирования.",
             "booking_date": "Укажите дату проведения мероприятия.",
-            "user": "Выберите пользователя, оформляющего заявку.",
             "notes": "Дополнительные пожелания или цель использования.",
         }
         widgets = {
@@ -146,9 +143,6 @@ class BookingForm(forms.ModelForm):
                     "class": "form-control",
                 },
                 format="%Y-%m-%d",
-            ),
-            "user": forms.Select(
-                attrs={"class": "form-select"},
             ),
             "notes": forms.Textarea(
                 attrs={

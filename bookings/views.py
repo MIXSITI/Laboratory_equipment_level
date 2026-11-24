@@ -1,8 +1,9 @@
 from django.db.models import Avg, Count, F, Max, Min, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from django.views.generic import DetailView, ListView
+from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from bookings.models import Booking
 from rooms.models import Room
@@ -145,84 +146,112 @@ class BookingDetailView(DetailView):
         return Booking.objects.select_related("room", "user")
 
 
-def booking_create(request):
-    if request.method == "POST":
-        form = BookingForm(request.POST)
-        if form.is_valid():
-            room = form.cleaned_data["room"]
-            booking_date = form.cleaned_data["booking_date"]
-            is_booked = Booking.objects.active().filter(
-                room=room,
-                booking_date=booking_date,
-            ).exists()
-            if is_booked:
-                form.add_error(
-                    None,
-                    "Выбранное помещение уже забронировано на эту дату.",
-                )
-            else:
-                booking = form.save(commit=False)
-                booking.cost = round(
-                    booking.room.hourly_rate * booking.duration_hours,
-                    2,
-                )
-                booking.save()
-                return redirect("bookings:bookings")
-    else:
-        form = BookingForm(
-            initial={
-                "booking_date": timezone.localdate(),
-            }
+class BookingCreateView(CreateView):
+    model = Booking
+    form_class = BookingForm
+    template_name = "bookings/booking_form.html"
+    context_object_name = "booking"
+    success_url = reverse_lazy("bookings:bookings")
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial["booking_date"] = timezone.localdate()
+        return initial
+
+    def _get_booking_user(self):
+        auth_user = self.request.user
+        if not auth_user.is_authenticated:
+            return None
+
+        email = (getattr(auth_user, "email", "") or "").strip()
+        if email:
+            existing = User.objects.filter(email__iexact=email).first()
+            if existing:
+                return existing
+
+        full_name = auth_user.get_full_name().strip()
+        display_name = full_name or auth_user.get_username()
+        existing_by_name = User.objects.filter(
+            name__iexact=display_name
+        ).first()
+        if existing_by_name:
+            return existing_by_name
+
+        fallback_email = email or f"{auth_user.get_username()}@roomly.local"
+        domain_user, _ = User.objects.get_or_create(
+            email=fallback_email,
+            defaults={
+                "name": display_name,
+                "role": (
+                    User.ROLE_STAFF
+                    if auth_user.is_staff
+                    else User.ROLE_STUDENT
+                ),
+            },
         )
+        return domain_user
 
-    return render(
-        request,
-        "bookings/booking_form.html",
-        {"form": form},
-    )
-
-
-def booking_update(request, booking_id: int):
-    booking = get_object_or_404(
-        Booking.objects.active(),
-        pk=booking_id,
-    )
-    if request.method == "POST":
-        form = BookingForm(request.POST, instance=booking)
-        if form.is_valid():
-            room = form.cleaned_data["room"]
-            booking_date = form.cleaned_data["booking_date"]
-            is_booked = (
-                Booking.objects.active()
-                .filter(room=room, booking_date=booking_date)
-                .exclude(pk=booking.pk)
-                .exists()
+    def form_valid(self, form):
+        if not self.request.user.is_authenticated:
+            form.add_error(
+                None,
+                "Для создания бронирования необходимо войти в систему.",
             )
-            if is_booked:
-                form.add_error(
-                    None,
-                    "Выбранное помещение уже забронировано на эту дату.",
-                )
-            else:
-                updated_booking = form.save(commit=False)
-                updated_booking.cost = round(
-                    updated_booking.room.hourly_rate
-                    * updated_booking.duration_hours,
-                    2,
-                )
-                updated_booking.save()
-                return redirect("bookings:bookings")
-    else:
-        form = BookingForm(instance=booking)
+            return self.form_invalid(form)
 
-    return render(
-        request,
-        "bookings/booking_form.html",
-        {
-            "form": form,
-            "booking": booking,
-        },
-    )
+        room = form.cleaned_data["room"]
+        booking_date = form.cleaned_data["booking_date"]
+        is_booked = Booking.objects.active().filter(
+            room=room,
+            booking_date=booking_date,
+        ).exists()
+        if is_booked:
+            form.add_error(
+                None,
+                "Выбранное помещение уже забронировано на эту дату.",
+            )
+            return self.form_invalid(form)
+
+        form.instance.user = self._get_booking_user()
+        form.instance.cost = round(
+            room.hourly_rate * form.instance.duration_hours,
+            2,
+        )
+        return super().form_valid(form)
+
+
+class BookingUpdateView(UpdateView):
+    model = Booking
+    form_class = BookingForm
+    template_name = "bookings/booking_form.html"
+    context_object_name = "booking"
+    pk_url_kwarg = "booking_id"
+    success_url = reverse_lazy("bookings:bookings")
+
+    def get_queryset(self):
+        return Booking.objects.active()
+
+    def form_valid(self, form):
+        room = form.cleaned_data["room"]
+        booking_date = form.cleaned_data["booking_date"]
+        is_booked = (
+            Booking.objects.active()
+            .filter(room=room, booking_date=booking_date)
+            .exclude(pk=self.object.pk)
+            .exists()
+        )
+        if is_booked:
+            form.add_error(
+                None,
+                "Выбранное помещение уже забронировано на эту дату.",
+            )
+            return self.form_invalid(form)
+
+        form.instance.cost = round(
+            room.hourly_rate * form.instance.duration_hours,
+            2,
+        )
+        return super().form_valid(form)
 
 
 @require_POST
